@@ -226,7 +226,7 @@ void ViewerWidget::frame_update() {
     } else {
       doneCurrent();
       renderer->start_render(context(), viewer->seq.get(), viewer->get_playback_speed(),
-                             nullptr, nullptr, 0, olive::CurrentConfig.playback_quality);
+                             nullptr, nullptr, 0, olive::CurrentConfig.playback_divider());
     }
 
     // render the audio
@@ -616,7 +616,7 @@ void ViewerWidget::paintGL() {
     if (renderer->did_texture_fail() && !viewer->playing) {
       doneCurrent();
       renderer->start_render(context(), viewer->seq.get(), viewer->get_playback_speed(),
-                             nullptr, nullptr, 0, olive::CurrentConfig.playback_quality);
+                             nullptr, nullptr, 0, olive::CurrentConfig.playback_divider());
     }
   }
 }

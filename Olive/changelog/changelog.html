@@ -50,10 +50,15 @@ FFmpeg formats) is still there underneath.</p>
       displayed frame still gets mipmaps once per paint. Removed a full-frame copy per clip per frame
       that nothing read.</li>
   <li><b>GPU Acceleration level</b> (<i>Preferences &gt; General</i>): pick how hard Olive leans on the
-      graphics card. <b>Light</b> turns multisampling off and holds rendering to the display refresh
-      rate, <b>Balanced</b> adds 4x multisampling with the same cap, and <b>Aggressive</b> raises that to
-      8x and switches vsync off so the viewer renders as fast as the GPU can. The choice is applied when
-      Olive starts, so it takes effect on the next launch.</li>
+      graphics card. <b>Light</b> turns multisampling off, keeps vsync on and never previews above half
+      resolution, <b>Balanced</b> uses 4x multisampling at the Playback Quality you choose, and
+      <b>Aggressive</b> raises that to 8x and switches vsync off so the viewer renders as fast as the GPU
+      can. Preview resolution is the setting that actually moves GPU load, so Light is the one that makes
+      a visible difference on a heavy timeline. The choice is applied when Olive starts, so it takes
+      effect on the next launch.</li>
+  <li><b>Preview Threads</b> (<i>Preferences &gt; General</i>): how many CPU threads each decoder may use
+      while preparing previews, or Automatic to let it use every core. Compositing the preview runs on a
+      single GPU render thread, so this controls the decoding half of playback load only.</li>
 </ul>
 
 <h2>3D, motion graphics and parenting</h2>

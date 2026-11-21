@@ -485,10 +485,22 @@ struct Config {
   /**
    * @brief How aggressively Olive uses the GPU
    *
-   * Controls the multisample count of the OpenGL surfaces and whether vsync is enabled (see enum GPUAcceleration).
-   * Read at start-up, before the default OpenGL format is set, so changing it takes effect on the next start.
+   * Controls the multisample count of the OpenGL surfaces, whether vsync is enabled (see enum GPUAcceleration) and
+   * the resolution the Viewer previews at (see Config::playback_divider()). Read at start-up, before the default
+   * OpenGL format is set, so changing it takes effect on the next start.
    */
   int gpu_acceleration;
+
+  /**
+   * @brief Number of decoder threads used to prepare previews
+   *
+   * Every clip prepares its preview frames on its own caching thread, and this sets how many CPU threads the decoder
+   * may use within that thread. Set to 0 (the default) to let the decoder decide, which normally uses every core.
+   *
+   * Note that this only covers the decode stage. Compositing the preview happens in a single GPU render thread, so
+   * lowering this value leaves the graphics card untouched.
+   */
+  int render_threads;
 
   /**
    * @brief Center Timeline timecodes
@@ -623,6 +635,15 @@ struct Config {
    * URL to save the configuration file to.
    */
   void save(QString path);
+
+  /**
+   * @brief Resolution divisor the Viewer previews at
+   *
+   * Config::playback_quality, lowered further by the GPU acceleration level. The Light level never previews above
+   * half resolution, because the preview resolution is what dominates the GPU's workload. Exports are never
+   * affected by this value.
+   */
+  int playback_divider() const;
 };
 
 /**

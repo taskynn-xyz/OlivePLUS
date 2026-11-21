@@ -69,6 +69,7 @@ Config::Config()
     effect_textbox_lines(3),
     use_software_fallback(false),
     gpu_acceleration(olive::kGPUAccelerationBalanced),
+    render_threads(0),
     center_timeline_timecodes(true),
     waveform_resolution(64),
     thumbnail_resolution(120),
@@ -83,6 +84,17 @@ Config::Config()
     default_sequence_audio_channel_layout(3),
     locked_panels(false)
 {}
+
+int Config::playback_divider() const {
+  int divider = qMax(1, playback_quality);
+
+  // the preview resolution is the biggest single GPU cost, so the lightest level refuses to render above half size
+  if (gpu_acceleration == olive::kGPUAccelerationLight) {
+    divider = qMax(divider, 2);
+  }
+
+  return divider;
+}
 
 void Config::load(QString path) {
   QFile f(path);
@@ -208,6 +220,9 @@ void Config::load(QString path) {
           gpu_acceleration = qBound(int(olive::kGPUAccelerationLight),
                                     stream.text().toInt(),
                                     int(olive::kGPUAccelerationAggressive));
+        } else if (stream.name() == "RenderThreads") {
+          stream.readNext();
+          render_threads = qBound(0, stream.text().toInt(), 64);
         } else if (stream.name() == "CenterTimelineTimecodes") {
           stream.readNext();
           center_timeline_timecodes =  (stream.text() == "1");
@@ -315,6 +330,7 @@ void Config::save(QString path) {
   stream.writeTextElement("EffectTextboxLines", QString::number(effect_textbox_lines));
   stream.writeTextElement("UseSoftwareFallback", QString::number(use_software_fallback));
   stream.writeTextElement("GPUAcceleration", QString::number(gpu_acceleration));
+  stream.writeTextElement("RenderThreads", QString::number(render_threads));
   stream.writeTextElement("CenterTimelineTimecodes", QString::number(center_timeline_timecodes));
   stream.writeTextElement("PreferredAudioOutput", preferred_audio_output);
   stream.writeTextElement("PreferredAudioInput", preferred_audio_input);

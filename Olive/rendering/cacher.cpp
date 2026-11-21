@@ -941,8 +941,12 @@ void Cacher::OpenWorker() {
 
     opts = nullptr;
 
-    // enable multithreading on decoding
-    av_dict_set(&opts, "threads", "auto", 0);
+    // enable multithreading on decoding - either the number of threads the user asked for, or let the decoder decide
+    if (olive::CurrentConfig.render_threads > 0) {
+      av_dict_set(&opts, "threads", QString::number(olive::CurrentConfig.render_threads).toUtf8(), 0);
+    } else {
+      av_dict_set(&opts, "threads", "auto", 0);
+    }
 
     // enable extra optimization code on h264 (not even sure if they help)
     if (stream->codecpar->codec_id == AV_CODEC_ID_H264) {

@@ -249,6 +249,11 @@ private:
   QComboBox* gpu_acceleration_combobox;
 
   /**
+   * @brief UI widget for selecting how many threads each decoder may use
+   */
+  QSpinBox* render_threads_spinbox;
+
+  /**
    * @brief UI widget for selecting the current UI style
    */
   QComboBox* ui_style;

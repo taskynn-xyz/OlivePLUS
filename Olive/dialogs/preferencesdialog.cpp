@@ -273,6 +273,7 @@ void PreferencesDialog::accept() {
 
   olive::CurrentConfig.effect_textbox_lines = effect_textbox_lines_field->value();
   olive::CurrentConfig.gpu_acceleration = gpu_acceleration_combobox->currentIndex();
+  olive::CurrentConfig.render_threads = render_threads_spinbox->value();
   olive::CurrentConfig.language_file = language_combobox->currentData().toString();
 
   olive::CurrentConfig.default_sequence_width = default_sequence.width;
@@ -589,10 +590,28 @@ void PreferencesDialog::setup_ui() {
   gpu_acceleration_combobox->addItem(tr("Balanced"));
   gpu_acceleration_combobox->addItem(tr("Aggressive"));
   gpu_acceleration_combobox->setCurrentIndex(qBound(0, olive::CurrentConfig.gpu_acceleration, 2));
-  gpu_acceleration_combobox->setToolTip(tr("How much work Olive hands to the GPU: multisampling of the viewer and "
-                                          "whether rendering is capped to the display refresh rate. Takes effect "
-                                          "after a restart."));
+  gpu_acceleration_combobox->setToolTip(tr("How much work Olive hands to the GPU. Light: no multisampling, vsync "
+                                          "on, and previews render at half resolution at most. Balanced: 4x "
+                                          "multisampling with previews at the Playback Quality you pick. "
+                                          "Aggressive: 8x multisampling and vsync off so the viewer renders as fast "
+                                          "as the GPU allows. Takes effect after a restart."));
   general_layout->addWidget(gpu_acceleration_combobox, row, 1, 1, 4);
+
+  row++;
+
+  // General -> Preview Threads
+  general_layout->addWidget(new QLabel(tr("Preview Threads:")), row, 0);
+
+  render_threads_spinbox = new QSpinBox(this);
+  render_threads_spinbox->setMinimum(0);
+  render_threads_spinbox->setMaximum(64);
+  render_threads_spinbox->setSpecialValueText(tr("Automatic"));
+  render_threads_spinbox->setValue(olive::CurrentConfig.render_threads);
+  render_threads_spinbox->setToolTip(tr("How many CPU threads each decoder may use while preparing previews. "
+                                        "Automatic lets the decoder use as many as it wants (normally every core). "
+                                        "Lower values keep Olive from saturating the CPU in the background. The "
+                                        "Viewer composites on a single GPU render thread either way."));
+  general_layout->addWidget(render_threads_spinbox, row, 1, 1, 4);
 
   row++;
 
