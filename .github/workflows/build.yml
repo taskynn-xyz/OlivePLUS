@@ -68,12 +68,21 @@ jobs:
           cp -r Olive/effects/shaders/. "$STAGE/effects/"
           cp -r Olive/effects/motionblur "$STAGE/effects/motionblur"
           cp -r Olive/effects/community "$STAGE/effects/community"
-          # UCRT64 ships the Qt5 tool as windeployqt-qt5 (Qt6 owns the plain name)
+          # UCRT64 ships the Qt5 tool as windeployqt-qt5 (Qt6 owns the plain name).
+          # It can bail out part-way through in this environment, so fall back to
+          # copying the dependencies and the plugin tree explicitly.
           DEPLOYQT=windeployqt-qt5
           command -v "$DEPLOYQT" > /dev/null || DEPLOYQT=windeployqt
-          "$DEPLOYQT" --release --no-translations --no-system-d3d-compiler "$STAGE/olive-editor.exe"
+          if ! "$DEPLOYQT" --release --no-translations --no-system-d3d-compiler "$STAGE/olive-editor.exe"; then
+            echo "::warning::windeployqt failed, copying runtime dependencies manually"
+            ldd "$STAGE/olive-editor.exe" | awk '/=> \/ucrt64/ {print $3}' | sort -u |
+              while read -r dll; do cp "$dll" "$STAGE/"; done
+            cp -r /ucrt64/share/qt5/plugins "$STAGE/plugins"
+            printf '[Paths]\nPlugins=plugins\n' > "$STAGE/qt.conf"
+          fi
           cp ffmpeg-${FFMPEG_VERSION}-full_build-shared/bin/*.dll "$STAGE/"
           cp BUILD-NOTES.txt "$STAGE/" || true
+          "$STAGE/olive-editor.exe" --version
           ( cd stage && zip -qr ../OlivePLUS-windows-x64.zip OlivePLUS )
 
       - uses: actions/upload-artifact@v4
