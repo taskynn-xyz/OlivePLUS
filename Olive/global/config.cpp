@@ -68,6 +68,7 @@ Config::Config()
     auto_seek_to_beginning(true),
     effect_textbox_lines(3),
     use_software_fallback(false),
+    gpu_acceleration(olive::kGPUAccelerationBalanced),
     center_timeline_timecodes(true),
     waveform_resolution(64),
     thumbnail_resolution(120),
@@ -202,6 +203,11 @@ void Config::load(QString path) {
         } else if (stream.name() == "UseSoftwareFallback") {
           stream.readNext();
           use_software_fallback = (stream.text() == "1");
+        } else if (stream.name() == "GPUAcceleration") {
+          stream.readNext();
+          gpu_acceleration = qBound(int(olive::kGPUAccelerationLight),
+                                    stream.text().toInt(),
+                                    int(olive::kGPUAccelerationAggressive));
         } else if (stream.name() == "CenterTimelineTimecodes") {
           stream.readNext();
           center_timeline_timecodes =  (stream.text() == "1");
@@ -308,6 +314,7 @@ void Config::save(QString path) {
   stream.writeTextElement("CSSPath", css_path);
   stream.writeTextElement("EffectTextboxLines", QString::number(effect_textbox_lines));
   stream.writeTextElement("UseSoftwareFallback", QString::number(use_software_fallback));
+  stream.writeTextElement("GPUAcceleration", QString::number(gpu_acceleration));
   stream.writeTextElement("CenterTimelineTimecodes", QString::number(center_timeline_timecodes));
   stream.writeTextElement("PreferredAudioOutput", preferred_audio_output);
   stream.writeTextElement("PreferredAudioInput", preferred_audio_input);

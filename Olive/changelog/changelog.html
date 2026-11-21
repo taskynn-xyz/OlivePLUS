@@ -49,6 +49,11 @@ FFmpeg formats) is still there underneath.</p>
   <li>No mipmap chain per blit: the render pipeline samples 1:1 with bilinear filtering, and the
       displayed frame still gets mipmaps once per paint. Removed a full-frame copy per clip per frame
       that nothing read.</li>
+  <li><b>GPU Acceleration level</b> (<i>Preferences &gt; General</i>): pick how hard Olive leans on the
+      graphics card. <b>Light</b> turns multisampling off and holds rendering to the display refresh
+      rate, <b>Balanced</b> adds 4x multisampling with the same cap, and <b>Aggressive</b> raises that to
+      8x and switches vsync off so the viewer renders as fast as the GPU can. The choice is applied when
+      Olive starts, so it takes effect on the next launch.</li>
 </ul>
 
 <h2>3D, motion graphics and parenting</h2>

@@ -19,6 +19,10 @@
 ***/
 
 #include <QApplication>
+#include <QDir>
+#include <QFileInfo>
+#include <QStandardPaths>
+#include <QSurfaceFormat>
 
 #include "global/debug.h"
 #include "global/config.h"
@@ -111,8 +115,46 @@ int main(int argc, char *argv[]) {
 
   QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
 
+  // The configuration directory is derived from these names, and the configuration has to be read before the
+  // default OpenGL format is decided below, so set them before QApplication exists.
+  QCoreApplication::setOrganizationName("olivevideoeditor.org");
+  QCoreApplication::setOrganizationDomain("olivevideoeditor.org");
+  // the application name doubles as the settings/cache directory name, so it is deliberately left as
+  // "Olive" to keep existing settings, layouts and the portable package working
+  QCoreApplication::setApplicationName("Olive");
+
+  // Read the configuration now: the GPU acceleration level decides the multisample count and the vsync behaviour
+  // of every OpenGL surface, and the default format has to be in place before QApplication is constructed.
+  // MainWindow loads the rest of the configuration (this file included) once it exists.
+  {
+    QDir exe_dir(QFileInfo(QString::fromLocal8Bit(argv[0])).absolutePath());
+    QString config_path = QFileInfo::exists(exe_dir.filePath("portable"))
+        ? exe_dir.absolutePath()
+        : QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    if (!config_path.isEmpty()) {
+      olive::CurrentConfig.load(QDir(config_path).filePath("config.xml"));
+    }
+  }
+
   QSurfaceFormat format;
   format.setDepthBufferSize(24);
+  switch (olive::CurrentConfig.gpu_acceleration) {
+  case olive::kGPUAccelerationLight:
+    // no multisampling, and the GPU is held to the display refresh rate
+    format.setSamples(0);
+    format.setSwapInterval(1);
+    break;
+  case olive::kGPUAccelerationAggressive:
+    // heavy multisampling and no vsync, so the GPU is free to run as fast as it can
+    format.setSamples(8);
+    format.setSwapInterval(0);
+    break;
+  case olive::kGPUAccelerationBalanced:
+  default:
+    format.setSamples(4);
+    format.setSwapInterval(1);
+    break;
+  }
   QSurfaceFormat::setDefaultFormat(format);
 
   QApplication a(argc, argv);
@@ -122,12 +164,7 @@ int main(int argc, char *argv[]) {
   // start media icon service (uses QPixmaps which require a QGuiApplication to have been created)
   olive::media_icon_service = std::unique_ptr<MediaIconService>(new MediaIconService());
 
-  // set app name data
-  QCoreApplication::setOrganizationName("olivevideoeditor.org");
-  QCoreApplication::setOrganizationDomain("olivevideoeditor.org");
-  // the application name doubles as the settings/cache directory name, so it is deliberately left as
-  // "Olive" to keep existing settings, layouts and the portable package working
-  QCoreApplication::setApplicationName("Olive");
+  // (the organization/application name data was set before QApplication, see above)
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 7, 0))
   QGuiApplication::setDesktopFileName("org.olivevideoeditor.Olive");

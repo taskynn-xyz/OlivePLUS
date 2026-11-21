@@ -215,6 +215,7 @@ void PreferencesDialog::accept() {
 
   // Check if any settings will require a restart of Olive
   if (bool_requires_restart
+      || olive::CurrentConfig.gpu_acceleration != gpu_acceleration_combobox->currentIndex()
       || olive::CurrentConfig.thumbnail_resolution != thumbnail_res_spinbox->value()
       || olive::CurrentConfig.waveform_resolution != waveform_res_spinbox->value()
       || olive::CurrentConfig.css_path != custom_css_fn->text()
@@ -271,6 +272,7 @@ void PreferencesDialog::accept() {
   olive::CurrentConfig.audio_rate = audio_sample_rate->currentData().toInt();
 
   olive::CurrentConfig.effect_textbox_lines = effect_textbox_lines_field->value();
+  olive::CurrentConfig.gpu_acceleration = gpu_acceleration_combobox->currentIndex();
   olive::CurrentConfig.language_file = language_combobox->currentData().toString();
 
   olive::CurrentConfig.default_sequence_width = default_sequence.width;
@@ -576,6 +578,21 @@ void PreferencesDialog::setup_ui() {
   QCheckBox* use_software_fallbacks_checkbox = new QCheckBox(tr("Use Software Fallbacks When Possible"));
   AddBoolPair(use_software_fallbacks_checkbox, &olive::CurrentConfig.use_software_fallback, true);
   general_layout->addWidget(use_software_fallbacks_checkbox, row, 0, 1, 4);
+
+  row++;
+
+  // General -> GPU Acceleration
+  general_layout->addWidget(new QLabel(tr("GPU Acceleration:")), row, 0);
+
+  gpu_acceleration_combobox = new QComboBox();
+  gpu_acceleration_combobox->addItem(tr("Light"));
+  gpu_acceleration_combobox->addItem(tr("Balanced"));
+  gpu_acceleration_combobox->addItem(tr("Aggressive"));
+  gpu_acceleration_combobox->setCurrentIndex(qBound(0, olive::CurrentConfig.gpu_acceleration, 2));
+  gpu_acceleration_combobox->setToolTip(tr("How much work Olive hands to the GPU: multisampling of the viewer and "
+                                          "whether rendering is capped to the display refresh rate. Takes effect "
+                                          "after a restart."));
+  general_layout->addWidget(gpu_acceleration_combobox, row, 1, 1, 4);
 
   row++;
 

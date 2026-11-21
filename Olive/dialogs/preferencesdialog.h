@@ -244,6 +244,11 @@ private:
   QSpinBox* waveform_res_spinbox;
 
   /**
+   * @brief UI widget for selecting how aggressively Olive uses the GPU
+   */
+  QComboBox* gpu_acceleration_combobox;
+
+  /**
    * @brief UI widget for selecting the current UI style
    */
   QComboBox* ui_style;

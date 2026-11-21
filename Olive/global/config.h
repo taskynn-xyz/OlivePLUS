@@ -127,6 +127,28 @@ namespace olive {
   };
 
   /**
+   * @brief The GPUAcceleration enum
+   *
+   * How much work Olive asks of the GPU. The Viewer renders through OpenGL, and this setting controls how much
+   * graphics hardware effort it is allowed to spend: the multisample count used for every OpenGL surface and whether
+   * the GPU is allowed to render uncapped (vsync off). Lower levels leave more of the machine free for other
+   * applications and for older GPUs.
+   *
+   * Note that this is applied when the application starts (the surface format is chosen before the first window
+   * exists), so changing it requires a restart.
+   */
+  enum GPUAcceleration {
+    /** No multisampling and vsync on - the lightest possible GPU load */
+    kGPUAccelerationLight,
+
+    /** 4x multisampling and vsync on (default) */
+    kGPUAccelerationBalanced,
+
+    /** 8x multisampling with vsync off, so the GPU renders as fast as it can */
+    kGPUAccelerationAggressive
+  };
+
+  /**
    * @brief The FrameQueueType enum
    *
    * Olive keeps a "frame queue" in memory to allow smoother playback/seeking. In order to give users control over
@@ -459,6 +481,14 @@ struct Config {
    * **TRUE** if Olive should prefer software fallbacks to hardware acceleration when they're available.
    */
   bool use_software_fallback;
+
+  /**
+   * @brief How aggressively Olive uses the GPU
+   *
+   * Controls the multisample count of the OpenGL surfaces and whether vsync is enabled (see enum GPUAcceleration).
+   * Read at start-up, before the default OpenGL format is set, so changing it takes effect on the next start.
+   */
+  int gpu_acceleration;
 
   /**
    * @brief Center Timeline timecodes
