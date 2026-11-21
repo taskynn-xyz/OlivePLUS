@@ -1,6 +1,12 @@
 # OlivePLUS
+<p align="center">
+  <img src="Olive/icons/oliveplus.png" alt="OlivePLUS" width="360">
+</p>
 
-OlivePLUS is a community fork of [Olive 0.1.2](https://github.com/olive-editor/olive), the open-source non-linear video editor.
+<p align="center">
+
+  
+  OlivePLUS is a community fork of [Olive 0.1.2](https://github.com/olive-editor/olive), the open-source non-linear video editor.
 Current version: **OlivePLUS 1.0.1 | Alpha**.
 
 ## What's different from Olive 0.1.2
