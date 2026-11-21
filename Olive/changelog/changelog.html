@@ -1,0 +1,167 @@
+<html>
+<head>
+<style type="text/css">
+body { font-family: "Segoe UI", sans-serif; font-size: 10pt; }
+h1 { font-size: 16pt; margin-bottom: 2px; }
+h2 { font-size: 12pt; margin-top: 18px; margin-bottom: 4px; color: #0078d4; }
+p.sub { color: #666; margin-top: 0; }
+li { margin-bottom: 3px; }
+code { font-family: Consolas, monospace; }
+</style>
+</head>
+<body>
+
+<h1>OlivePLUS 1.0.1</h1>
+<p style="color:#666; margin-top:0;">Changes compared to vanilla Olive 0.1.2</p>
+
+<p>OlivePLUS is a fork of <b>Olive 0.1.2</b>, the last release of the original Olive non-linear
+video editor. Everything listed below is new or changed in OlivePLUS 1.0.1; the upstream 0.1.2
+feature set (timeline, project/media handling, transitions, the original effects, export to
+FFmpeg formats) is still there underneath.</p>
+
+<h2>New in 1.0.1</h2>
+<ul>
+  <li><b>3D nulls are a pivot:</b> for a parented 3D layer, rotation and scale now turn around the
+      centre of the null instead of the layer's own centre, so a group of children orbits and scales
+      as one object from that central point.</li>
+  <li><b>Camera rigs:</b> a camera layer can be parented to a 3D null - moving the null trucks the
+      camera, rotating it orbits the camera around the null, and the camera keeps aiming at its
+      transformed point of interest with no camera keyframes.</li>
+  <li><b>Glow methods, no more streaking:</b> Deep Glow, Neon Glow, Inner Glow and Bloom each gained
+      a <i>Method</i> picker with their own kernels, and all of them sample with a per-pixel jitter,
+      so the glow is a smooth halo instead of the spoke-like streaks a fixed kernel leaves.</li>
+  <li><b>Colour swatches:</b> a colour field in the effect controls now shows the colour it holds
+      (contrasting border, accent border on hover, faded fill when disabled) instead of looking
+      blank.</li>
+  <li>The text stylisers <b>Gradient Sweep</b>, <b>Alpha Bevel</b> and <b>Inner Glow</b> are filed
+      under <b>Stylize</b>, with the rest of the look effects.</li>
+</ul>
+
+<h2>Playback and performance</h2>
+<ul>
+  <li><b>Playback Quality</b> (<i>Playback &gt; Playback Quality</i>, and a button in both viewer
+      toolbars): Full, 1/2, 1/4, 1/8 and 1/16 preview resolution, saved with the configuration.
+      Exports always render at full resolution.</li>
+  <li>Changing the preview quality mid-session rebuilds every open clip's framebuffers, so the
+      preview is never drawn into a stale buffer of the wrong size.</li>
+  <li>Effect shaders are told the resolution of the buffer they actually draw into, so shaders that
+      work from <code>gl_FragCoord / resolution</code> stay exact at every quality setting.</li>
+  <li>No mipmap chain per blit: the render pipeline samples 1:1 with bilinear filtering, and the
+      displayed frame still gets mipmaps once per paint. Removed a full-frame copy per clip per frame
+      that nothing read.</li>
+</ul>
+
+<h2>3D, motion graphics and parenting</h2>
+<ul>
+  <li><b>3D Transform</b> effect: Position X/Y/Z, Rotation X/Y/Z, Scale, Perspective, Anchor Point,
+      Opacity and the same motion blur rows as the Transform effect. The quad is projected per corner
+      with a real perspective divide, so a keyframed Y rotation is a true card flip.</li>
+  <li><b>Null layers</b> (draw nothing, carry a transform) and <b>After Effects style parenting</b>:
+      parent from the clip's Parent submenu or the Clip Properties dialog. The parent's transform is
+      applied on top of the child's own, chains are supported up to 32 links, loops are refused and
+      every link is undoable. Parent choices are limited to the track directly above/below, and a
+      clip shows its parent in a badge on the timeline.</li>
+  <li><b>3D Null Layer</b>: a null carrying only a 3D Transform. It drives clips that have a 3D
+      Transform of their own, and a flat clip ignores it entirely.</li>
+  <li><b>Camera layer</b> (<i>Timeline &gt; Add &gt; Camera</i>, also a "Camera" effect) with
+      Position, Point of Interest and Zoom. Like After Effects, it only affects 3D layers - a clip
+      without a 3D Transform is composited flat and never sees the camera.</li>
+  <li>A camera layer can be <b>parented to a 3D null</b>, which acts as a camera rig: moving the
+      null trucks the camera, rotating it orbits the camera around the null, and the camera keeps
+      aiming at its (transformed) point of interest, with no camera keyframes needed.</li>
+  <li>Real spatial parenting: a clip with a 3D Transform composes its parent chain in scene space and
+      projects it, so a child of a rotated 3D null is foreshortened in depth instead of being
+      sheared by a flat matrix.</li>
+  <li>A parented 3D layer's own rotation and scale pivot on the <b>centre of the 3D null</b>, not on
+      its own centre, so a group of children orbits and scales as one object from that central point.
+      Unparented 3D layers, and camera projection, still work around the layer itself.</li>
+  <li><b>Motion blur</b> on Transform, Shake and 3D Transform (Shutter Angle, Shutter Phase, Blur
+      Samples); the pass only runs on frames where the pose actually changes.</li>
+</ul>
+
+<h2>Layers and timeline</h2>
+<ul>
+  <li><b>Adjustment layers</b>: no media of their own; their effect chain runs on the frame already
+      rendered below them, so transparent effects behave as masked adjustments.</li>
+  <li><b>Shape generator</b> (<i>Add &gt; Shape</i>, also the Shape effect): rectangle, ellipse,
+      polygon, star and line with size, position, rotation, corner radius, fill, gradient, stroke,
+      animated trim and feather.</li>
+  <li><b>Blending modes</b>: the full standard set (Darken, Multiply, Screen, Overlay, Soft/Hard
+      Light, Difference, Hue, Saturation, Color, Luminosity and the rest) instead of only Normal.</li>
+  <li><b>Rename layers in place</b>: right-click &gt; Rename Layer or F2, commit with Enter, cancel
+      with Escape; undoable.</li>
+  <li>Effects render on top of the transform: plain image effects (blur, colour, glow, ...) are
+      applied after the clip has been placed in sequence space, so they wrap the transformed image
+      instead of being baked inside the clip's source rectangle.</li>
+</ul>
+
+<h2>Text and titles</h2>
+<ul>
+  <li>The text renderer was rewritten around glyph outlines, so a title can have a real gradient
+      fill across the whole text, a true stroke outline, and a blurred silhouette drop shadow.</li>
+  <li>New <b>Title Text</b> generator with Font, Size, Bold, Italic and Color as effect fields, so
+      the panel's font is authoritative. <i>Add &gt; Title</i> now creates a Text clip.</li>
+  <li>Rich Text effect gains Gradient Fill / Colour A / Colour B / Gradient Angle, Outline, Outline
+      Colour and Outline Width, appended after the shadow rows so old projects still load.</li>
+  <li>The Edit Text dialog's font and formatting toolbar now applies to the selection, or to the
+      whole document when nothing is selected, and no longer loses the font you picked.</li>
+</ul>
+
+<h2>Effects</h2>
+<p>Dozens of new effects, all keyframable and all preserving the clip's alpha. They live in
+<code>effects/community</code> (shader effects) plus the new internal Transform/3D Transform.</p>
+<ul>
+  <li><b>Motion graphics:</b> Linear Wipe, Iris Wipe, Shape Matte, Duotone, Long Shadow,
+      Repeater Grid, Light Leak, Zoom Blur, Chromatic Aberration, Glitch Blocks, Grid Collage,
+      Spotlight, Halftone.</li>
+  <li><b>Text stylisers (Stylize, stay inside the layer's alpha):</b> Gradient Sweep,
+      Alpha Bevel, Inner Glow.</li>
+  <li><b>Lighting:</b> God Rays, Deep Glow, Anamorphic Streak, Volumetric Fog, Light Sweep.</li>
+  <li><b>Glow methods:</b> Deep Glow, Neon Glow, Inner Glow and Bloom each have a <i>Method</i>
+      picker (Gaussian / Bokeh / Anamorphic, Soft Halo / Crisp Lines / Wide Bloom, Soft / Crisp /
+      Directional, Gaussian / Box / Bokeh). Their sampling is jittered per pixel, so the glows are
+      smooth halos instead of the spoke-like streaking a fixed kernel leaves.</li>
+  <li><b>Stylize:</b> Pencil Sketch, Comic Ink, Bleach Bypass, Cross Process, Threshold,
+      Stained Glass, Hex Mosaic.</li>
+  <li><b>Distort:</b> Barrel Distortion, Liquid Melt, Mirror World, Shockwave, Pixel Stretch,
+      Voronoi Shatter, Kaleidoscope, Displacement Map, Turbulent Warp.</li>
+  <li><b>Retro and stylised looks:</b> CRT, Old Film, Hologram, Heat Vision, Neon Glow,
+      Dither Crush, Oil Paint, Anaglyph 3D, Lens Flare, Bloom, Bokeh Blur, Denoise, Sharpen,
+      Find Edge, Glitch, Gradient, Radial Wipe.</li>
+  <li><b>Wacky:</b> Infinite Tunnel, Lava Lamp, ASCII Mosaic, Bubble Wrap, Psychedelic Haze.</li>
+</ul>
+
+<h2>Interface</h2>
+<ul>
+  <li>Fluent-style stylesheet: flat rounded controls, the Microsoft accent colour, underlined panel
+      tabs, rounded menus, slim scrollbars, rounded progress bars, sliders and checkboxes - for both
+      the dark and light themes. A custom CSS file still overrides it.</li>
+  <li>The application is rebranded as <b>OlivePLUS</b> (window title, About box, welcome dialog,
+      status bar, icon, installer) with a motion-graphics splash notice, while the settings/cache
+      folder is deliberately still called "Olive" so existing settings and recent projects keep
+      working.</li>
+  <li><b>Help &gt; Changelog</b>: opens this document.</li>
+</ul>
+
+<h2>Export</h2>
+<ul>
+  <li>An <b>Encoder</b> row in the Export dialog: Software (CPU) or <b>NVIDIA NVENC</b> for
+      H.264/H.265. NVENC is probed with a throwaway encoder before use and silently falls back to
+      the software encoder when no NVIDIA GPU/driver is available, so it can never break an export.</li>
+</ul>
+
+<h2>Fixes and compatibility</h2>
+<ul>
+  <li>2D clips and titles no longer pick up a garbage perspective weight in one corner, which used
+      to shear them as if they stood in 3D space.</li>
+  <li>Null layers no longer composite anything: previously a null could black out or white out
+      everything below it, because its motion blur pass sampled an unbound texture.</li>
+  <li>Null and Shape objects can be placed on video tracks again; they were previously only accepted
+      on audio tracks.</li>
+  <li>Qt 5.15 build fixes (missing transitive includes) and a Radial Wipe shader that used the
+      GLSL 1.30 <code>texture()</code> call now compiles as GLSL 1.10.</li>
+  <li>The build still requires FFmpeg 4.x: vanilla Olive 0.1.2 uses APIs that FFmpeg 5.0 removed.</li>
+</ul>
+
+</body>
+</html>

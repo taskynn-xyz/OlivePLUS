@@ -1,0 +1,158 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ "v*" ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Olive 0.1.2 only compiles against FFmpeg 4.x (it still uses the
+  # pre-5.0 channel-layout API), so every job pins FFmpeg 4.4.
+  FFMPEG_VERSION: "4.4"
+
+jobs:
+  windows:
+    name: Windows (MinGW-w64, Qt 5)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-qt5-base
+            mingw-w64-x86_64-qt5-multimedia
+            mingw-w64-x86_64-qt5-svg
+            mingw-w64-x86_64-qt5-tools
+            unzip
+            zip
+
+      - name: Fetch FFmpeg 4.4 (shared)
+        run: |
+          curl -fsSL -o ffmpeg.zip \
+            "https://github.com/GyanD/codexffmpeg/releases/download/${FFMPEG_VERSION}/ffmpeg-${FFMPEG_VERSION}-full_build-shared.zip"
+          unzip -q ffmpeg.zip
+
+      - name: Configure
+        run: |
+          FFMPEG_ROOT="$(cygpath -m "$PWD/ffmpeg-${FFMPEG_VERSION}-full_build-shared")"
+          cmake -S Olive -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="/mingw64;$FFMPEG_ROOT" \
+            -DFFMPEG_ROOT="$FFMPEG_ROOT"
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Package
+        run: |
+          STAGE="stage/OlivePLUS"
+          mkdir -p "$STAGE/effects"
+          cp build/olive-editor.exe "$STAGE/"
+          cp -r Olive/effects/shaders/. "$STAGE/effects/"
+          cp -r Olive/effects/motionblur "$STAGE/effects/motionblur"
+          cp -r Olive/effects/community "$STAGE/effects/community"
+          windeployqt --release --no-translations --no-system-d3d-compiler "$STAGE/olive-editor.exe"
+          cp ffmpeg-${FFMPEG_VERSION}-full_build-shared/bin/*.dll "$STAGE/"
+          cp BUILD-NOTES.txt "$STAGE/" || true
+          ( cd stage && zip -qr ../OlivePLUS-windows-x64.zip OlivePLUS )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OlivePLUS-windows-x64
+          path: OlivePLUS-windows-x64.zip
+          if-no-files-found: error
+
+  linux:
+    name: Linux (Qt 5, FFmpeg 4.4)
+    # 22.04 still ships FFmpeg 4.4; 24.04+ ships 6/7 which does not compile.
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build pkg-config \
+            qtbase5-dev qtmultimedia5-dev libqt5svg5-dev libqt5opengl5-dev \
+            qttools5-dev-tools libgl1-mesa-dev \
+            libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev \
+            libswscale-dev libswresample-dev \
+            frei0r-plugins-dev
+
+      - name: Configure
+        run: |
+          cmake -S Olive -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Package
+        run: |
+          STAGE="stage/OlivePLUS"
+          mkdir -p "$STAGE/effects"
+          cp build/olive-editor "$STAGE/"
+          cp -r Olive/effects/shaders/. "$STAGE/effects/"
+          cp -r Olive/effects/motionblur "$STAGE/effects/motionblur"
+          cp -r Olive/effects/community "$STAGE/effects/community"
+          cp BUILD-NOTES.txt "$STAGE/" || true
+          ( cd stage && zip -qr ../OlivePLUS-linux-x64.zip OlivePLUS )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OlivePLUS-linux-x64
+          path: OlivePLUS-linux-x64.zip
+          if-no-files-found: error
+
+  macos:
+    name: macOS (Qt 5, FFmpeg 4.4)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install qt@5 ffmpeg@4 pkg-config
+          brew unlink qt 2>/dev/null || true
+
+      - name: Configure
+        run: |
+          PREFIXES="$(brew --prefix qt@5);$(brew --prefix ffmpeg@4)"
+          cmake -S Olive -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$PREFIXES" \
+            -DFFMPEG_ROOT="$(brew --prefix ffmpeg@4)"
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Package
+        run: |
+          STAGE="stage/OlivePLUS"
+          mkdir -p "$STAGE/effects"
+          cp build/Olive "$STAGE/OlivePLUS"
+          cp -r Olive/effects/shaders/. "$STAGE/effects/"
+          cp -r Olive/effects/motionblur "$STAGE/effects/motionblur"
+          cp -r Olive/effects/community "$STAGE/effects/community"
+          cp BUILD-NOTES.txt "$STAGE/" || true
+          ( cd stage && zip -qry ../OlivePLUS-macos.zip OlivePLUS )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OlivePLUS-macos
+          path: OlivePLUS-macos.zip
+          if-no-files-found: error

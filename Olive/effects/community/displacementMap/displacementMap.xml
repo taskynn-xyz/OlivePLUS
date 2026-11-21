@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Displacement Map" category="Distort">
+	<row name="Strength">
+		<field type="double" min="0" default="30" max="200" id="strength"/>
+	</row>
+	<row name="Scale">
+		<field type="double" min="0.1" default="3" max="40" id="scale"/>
+	</row>
+	<row name="Angle">
+		<field type="double" min="0" default="0" max="360" id="angle"/>
+	</row>
+	<row name="Speed">
+		<field type="double" min="0" default="0" max="4" id="speed"/>
+	</row>
+	<row name="Edge Clamp">
+		<field type="bool" default="1" id="edgeClamp"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="displacementMap.frag"/>
+</effect>

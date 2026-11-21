@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Voronoi Shatter" category="Distort">
+	<row name="Cells">
+		<field type="double" min="2" default="18" max="120" id="cells"/>
+	</row>
+	<row name="Shatter">
+		<field type="double" min="0" default="0.45" max="1" id="amount"/>
+	</row>
+	<row name="Cracks">
+		<field type="double" min="0" default="0.7" max="1" id="cracks"/>
+	</row>
+	<row name="Animate">
+		<field type="double" min="0" default="0" max="1" id="animate"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="voronoiShatter.frag"/>
+</effect>

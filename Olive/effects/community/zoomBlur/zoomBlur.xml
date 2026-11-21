@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Zoom Blur" category="Motion Graphics">
+	<row name="Amount">
+		<field type="double" min="0" default="0.5" max="2" id="amount"/>
+	</row>
+	<row name="Centre X">
+		<field type="double" min="0" default="0.5" max="1" id="centerx"/>
+	</row>
+	<row name="Centre Y">
+		<field type="double" min="0" default="0.5" max="1" id="centery"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="zoomblur.frag"/>
+</effect>

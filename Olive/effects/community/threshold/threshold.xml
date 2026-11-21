@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Threshold" category="Stylize">
+	<row name="Threshold">
+		<field type="double" min="0" max="1" default="0.5" id="threshold"/>
+	</row>
+	<row name="Softness">
+		<field type="double" min="0" max="0.5" default="0.01" id="softness"/>
+	</row>
+	<row name="Invert">
+		<field type="bool" default="false" id="invert"/>
+	</row>
+	<row name="Colour">
+		<field type="color" hex="#ffffff" id="thresholdcolor"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="threshold.frag"/>
+</effect>

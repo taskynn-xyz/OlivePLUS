@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Old Film" category="Stylize">
+	<row name="Grain">
+		<field type="double" min="0" default="0.25" max="1" id="grain"/>
+	</row>
+	<row name="Flicker">
+		<field type="double" min="0" default="0.2" max="1" id="flicker"/>
+	</row>
+	<row name="Scratches">
+		<field type="double" min="0" default="0.4" max="1" id="scratches"/>
+	</row>
+	<row name="Sepia">
+		<field type="double" min="0" default="0.6" max="1" id="sepia"/>
+	</row>
+	<row name="Gate Weave">
+		<field type="double" min="0" default="1" max="4" id="jitter"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="oldFilm.frag"/>
+</effect>

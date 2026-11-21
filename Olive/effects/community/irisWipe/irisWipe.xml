@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Iris Wipe" category="Motion Graphics">
+	<row name="Size">
+		<field type="double" min="0" default="60" max="100" id="progress"/>
+	</row>
+	<row name="Softness">
+		<field type="double" min="0" default="2" max="50" id="softness"/>
+	</row>
+	<row name="Center X">
+		<field type="double" min="-0.5" default="0" max="0.5" id="center_x"/>
+	</row>
+	<row name="Center Y">
+		<field type="double" min="-0.5" default="0" max="0.5" id="center_y"/>
+	</row>
+	<row name="Invert">
+		<field type="double" min="0" default="0" max="1" id="invert"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="irisWipe.frag"/>
+</effect>

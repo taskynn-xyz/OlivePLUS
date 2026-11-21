@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Alpha Bevel" category="Stylize">
+	<row name="Highlight Colour">
+		<field type="color" hex="#ffffff" id="highlight"/>
+	</row>
+	<row name="Shadow Colour">
+		<field type="color" hex="#000000" id="shadow"/>
+	</row>
+	<row name="Light Angle">
+		<field type="double" min="0" default="135" max="360" id="angle"/>
+	</row>
+	<row name="Depth">
+		<field type="double" min="0.5" default="3" max="40" id="depth"/>
+	</row>
+	<row name="Strength">
+		<field type="double" min="0.1" default="1" max="4" id="strength"/>
+	</row>
+	<row name="Amount">
+		<field type="double" min="0" default="1" max="1" id="amount"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="alphaBevel.frag"/>
+</effect>

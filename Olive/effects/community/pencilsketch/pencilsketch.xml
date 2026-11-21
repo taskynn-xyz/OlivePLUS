@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Pencil Sketch" category="Stylize">
+	<row name="Strength">
+		<field type="double" min="0" max="1" default="0.8" id="strength"/>
+	</row>
+	<row name="Line Thickness">
+		<field type="double" min="1" max="20" default="2" id="thickness"/>
+	</row>
+	<row name="Paper Grain">
+		<field type="double" min="0" max="1" default="0.35" id="paper"/>
+	</row>
+	<row name="Paper Colour">
+		<field type="color" hex="#ece5d3" id="papercolor"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="pencilsketch.frag"/>
+</effect>

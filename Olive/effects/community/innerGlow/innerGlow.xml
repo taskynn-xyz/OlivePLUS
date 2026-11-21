@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Inner Glow" category="Stylize">
+	<row name="Colour">
+		<field type="color" hex="#7cd0ff" id="colour"/>
+	</row>
+	<row name="Radius">
+		<field type="double" min="1" default="10" max="120" id="radius"/>
+	</row>
+	<row name="Intensity">
+		<field type="double" min="0" default="1.5" max="6" id="intensity"/>
+	</row>
+	<row name="Amount">
+		<field type="double" min="0" default="1" max="1" id="amount"/>
+	</row>
+	<row name="Method">
+		<field type="combo" default="0" id="method">
+			<option>Soft</option>
+			<option>Crisp</option>
+			<option>Directional</option>
+		</field>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="innerGlow.frag"/>
+</effect>

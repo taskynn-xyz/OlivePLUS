@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Shape Matte" category="Motion Graphics">
+	<row name="Shape">
+		<field type="double" min="0" default="0" max="2" id="shape"/>
+	</row>
+	<row name="Width">
+		<field type="double" min="0" default="70" max="200" id="width_s"/>
+	</row>
+	<row name="Height">
+		<field type="double" min="0" default="70" max="200" id="height_s"/>
+	</row>
+	<row name="Roundness">
+		<field type="double" min="0" default="0.25" max="1" id="roundness"/>
+	</row>
+	<row name="Feather">
+		<field type="double" min="0" default="1" max="50" id="feather"/>
+	</row>
+	<row name="Center X">
+		<field type="double" min="-0.5" default="0" max="0.5" id="center_x"/>
+	</row>
+	<row name="Center Y">
+		<field type="double" min="-0.5" default="0" max="0.5" id="center_y"/>
+	</row>
+	<row name="Invert">
+		<field type="double" min="0" default="0" max="1" id="invert"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="shapeMatte.frag"/>
+</effect>

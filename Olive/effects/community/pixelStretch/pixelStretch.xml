@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Pixel Stretch" category="Stylize">
+	<row name="Threshold">
+		<field type="double" min="0" default="0.55" max="1" id="threshold"/>
+	</row>
+	<row name="Stretch">
+		<field type="double" min="0" default="0.5" max="1" id="stretch"/>
+	</row>
+	<row name="Smear">
+		<field type="double" min="0" default="1" max="2" id="smear"/>
+	</row>
+	<row name="Reverse">
+		<field type="double" min="0" default="0" max="1" id="reverse"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="pixelStretch.frag"/>
+</effect>

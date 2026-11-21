@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Turbulent Warp" category="Distort">
+	<row name="Strength">
+		<field type="double" min="0" default="22" max="200" id="strength"/>
+	</row>
+	<row name="Scale">
+		<field type="double" min="0.1" default="3.5" max="40" id="scale"/>
+	</row>
+	<row name="Twist">
+		<field type="double" min="-2" default="0.35" max="2" id="twist"/>
+	</row>
+	<row name="Speed">
+		<field type="double" min="0" default="0.3" max="4" id="speed"/>
+	</row>
+	<row name="Edge Clamp">
+		<field type="bool" default="1" id="edgeClamp"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="turbulentWarp.frag"/>
+</effect>

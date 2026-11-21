@@ -1,0 +1,556 @@
+OlivePLUS 1.0.1 - custom Windows x64 build
+==========================================
+
+Local source modifications in this build
+-----------------------------------------
+1) Internal Transform and Shake effects: temporal motion blur
+   - New effect fields on both effects (appended after the existing rows so old
+     projects still load):
+       Shutter Angle   (degrees, default 180; 0 disables motion blur)
+       Shutter Phase   (degrees, default 0 = exposure centred on the frame)
+       Blur Samples    (1..64, default 16)
+   - The blur pass only runs on frames where the effect actually changes, so
+     static clips cost nothing.
+   - Implementation:
+       effects/internal/motionblur.h/.cpp      (shared pose sampling, per-sample UV maps)
+       effects/internal/transformeffect.cpp    (pose + uniforms)
+       effects/internal/shakeeffect.cpp        (pose + uniforms)
+       effects/motionblur/motionblur.vert      (passthrough vertex shader)
+       effects/motionblur/motionblur.frag      (64-tap accumulation pass)
+     The shaders are runtime assets shared by both effects: they must stay in
+     <exe>/effects/motionblur/.
+   - Notes:
+       * The sample maps are built in media pixels and converted to texture
+         coordinates with the frame aspect ratio folded in, so rotation blurs
+         along the correct arc on non-square (e.g. 16:9) footage.
+       * Shake rotates around the clip centre, matching its glRotatef().
+
+2) Qt 5.15 compile fixes (missing transitive includes):
+       effects/internal/texteffect.cpp
+       effects/internal/timecodeeffect.cpp
+       ui/graphview.cpp
+       ui/timelineheader.cpp
+   each got an explicit #include <QPainterPath>.
+
+3) Playback > Playback Quality
+   - New submenu offering Full, 1/2, 1/4, 1/8 and 1/16 preview resolution, so effect-heavy
+     sequences can play back in real time.
+   - The Viewer renders into smaller buffers at the chosen fraction and the image is scaled
+     back up for display. Export is never affected (it always renders at full resolution).
+   - The choice is saved in the configuration file (PlaybackQuality) and applies to both the
+     Sequence and the Media viewer.
+   - Changing it mid-session rebuilds every open clip's framebuffers at the new size
+     (Clip::fbo_divider), so the preview is never drawn into a stale buffer of the wrong size.
+   - Effect shaders are told the size of the buffer they are actually drawing into
+     (Effect::process_shader now divides the `resolution` uniform by the preview divisor).
+     Shaders that derive texture coordinates from gl_FragCoord.xy / resolution - which is most
+     of the built-in blurs and most of the effects below - used to sample only a corner of the
+     frame at reduced quality, which made clips look cropped/off-centre. They are now exact at
+     every quality setting.
+   - Implementation:
+       global/config.cpp/.h                 (PlaybackQuality setting)
+       ui/mainwindow.cpp/.h                 (Playback menu entry)
+       ui/viewerwidget.cpp                  (passes the setting to the render thread)
+       rendering/renderthread.cpp/.h        (preview buffer size)
+       rendering/renderfunctions.cpp/.h     (ComposeSequenceParams::divider, clip framebuffers)
+       timeline/clip.cpp/.h                 (fbo_divider tracking)
+       effects/effect.cpp/.h                (GLTextureCoords::divider, divided resolution)
+
+4) Extra video effects (effects/community/)
+   - The Olive Editor Community Effects suite, imported from
+     Olive-Editor-Community-Effects-master.zip into effects/community/ (it is copied next to the
+     executable by the build):
+       Barrel Distortion, Bloom, Bokeh Blur, Denoise, Find Edge, Glitch, Gradient, Halftone,
+       Kaleidoscope, Radial Wipe, Sharpen.
+   - Effects written for this build:
+       CRT            curved-glass VHS/CRT look: chroma bleed, scanlines, rolling bar, static
+       Liquid Melt    noise-driven image displacement, paint running down the frame
+       Neon Glow      sobel edge detection traced in a glowing colour
+       Heat Vision    thermal-camera palette with hot-area bleed
+       Dither Crush   low colour depth with a 4x4 ordered dither and optional big pixels
+       Old Film       gate weave, sepia, grain, scratches and exposure flicker
+       Voronoi Shatter  the frame breaks into animated shards with dark cracks
+       Pixel Stretch    bright areas smear into long horizontal pixel-sort streaks
+       Hologram         cyan projection, tracking bands, scanlines and flicker
+       Oil Paint        Kuwahara filter: flat colour areas, painterly edges
+       Mirror World     mirrored wedges plus concentric rings folding into themselves
+       Shockwave        travelling rings that bend the image and split the channels
+       Lens Flare       procedural anamorphic streaks, ghost reflections, warm halo
+       Anaglyph 3D      red/cyan separation for viewing with anaglyph glasses
+   - All effects live in effects/community/<name>/ with an .xml definition and a GLSL 1.10
+     fragment shader; the shared vertex shader is effects/community/COMMON/common.vert.
+   - The Radial Wipe shader from the suite used the GLSL 1.30 texture() call, which does not
+     exist in a 1.10 shader; it now calls texture2D() and compiles.
+
+5) Rich text font selection
+   - The font chooser in the text editor (Rich Text / Text effects) now uses QFontComboBox's
+     currentFontChanged signal and merges a QTextCharFormat, so the chosen family is applied to
+     the selection (or to the next typed characters).
+   - The toolbar is synchronised from the cursor with the font family, size and colour widgets'
+     signals blocked, so moving the cursor or typing no longer feeds the old formatting back into
+     the document and undoes the font the user just picked.
+
+6) Program renamed to OlivePLUS
+   - Window title, About box, welcome dialog, status bar, desktop display name and the Windows
+     installer all say OlivePLUS. The title bar's date is now the month the build runs in
+     (formerly the hard-coded "April 2019") and the build is still marked as Alpha.
+   - New icon (from OlivePLUS.png) is embedded in the executable as its Windows icon and added
+     to the Qt resources for the window/taskbar icon and the About splash.
+       icons/oliveplus.png
+       packaging/windows/OlivePLUS.ico
+       packaging/windows/appicon.rc.in
+   - The application name used for the settings/cache directory is deliberately still "Olive"
+     so existing settings, layouts, recent projects and the portable package keep working.
+
+7) NVENC export profile
+   - The Export dialog has a new "Encoder" row in the Video group: Software (CPU) or NVIDIA NVENC
+     (GPU). It is only enabled for H.264/H.265, the codecs NVENC supports.
+   - With NVENC selected the export uses h264_nvenc / hevc_nvenc instead of libx264 / libx265,
+     which moves encoding onto the GPU:
+       preset p5, tune hq, high/main profile, 2 second GOP, no lookahead
+       Constant Bitrate  -> rc=cbr with the requested bitrate and 1 s buffer
+       Quality (CRF)     -> rc=vbr + cq, so the same quality number works for both encoders
+   - Before using it, the encoder is opened once with a throwaway context. If there is no NVIDIA
+     GPU/driver (or the FFmpeg build lacks NVENC) the export silently falls back to the software
+     encoder, so the feature can never break an export.
+   - Implementation: dialogs/exportdialog.cpp/.h (Encoder row), rendering/exportthread.cpp/.h
+     (VideoCodecParams::hardware_encoder, encoder selection, NVENC options).
+
+8) GPU / playback performance
+   - The render pipeline no longer builds a mipmap chain for every blit. PrepareToDraw() used to
+     call glGenerateMipmap() (a full texture reduction) on every clip, for every effect pass, every
+     frame - the single biggest GPU cost of playback. The pipeline samples those buffers 1:1, so it
+     now uses plain bilinear filtering. The displayed frame still gets mipmaps once per paint in
+     ViewerWidget::paintGL, so a downscaled preview stays smooth.
+   - Removed a full-frame copy per clip per frame: compose_sequence() copied the composited frame
+     into a second back buffer for the shader-based blending path, which is disabled and whose
+     result was never read.
+   - Framebuffer textures are created with bilinear filtering to match (no unused mip chain).
+   - Implementation: rendering/renderfunctions.cpp, rendering/framebufferobject.cpp,
+     ui/viewerwidget.cpp.
+
+9) Fluent-style UI
+   - New application stylesheet (ui/styling.cpp: GetFluentStyleSheet()) applied by MainWindow:
+     flat rounded controls and fields, Microsoft accent #0078D4 (lightened to #4CC2FF on dark
+     surfaces), accent-underlined panel tabs, rounded menus with accent selection, slim overlay
+     scrollbars, rounded progress bars, checkboxes and sliders, and flat table headers.
+   - Works for both the dark and light themes and is inherited by panels and dialogs. Loading a
+     custom CSS file in Preferences still overrides it.
+
+10) Motion-graphics effects (effects/community/, category "Motion Graphics")
+    Linear Wipe     directional wipe with a soft edge (keyframe Progress) - reveal/cover
+    Iris Wipe       circular reveal or close, with an offset centre and feather
+    Shape Matte     circle / rounded box / diamond alpha matte for cards, avatars and icons
+    Duotone         luminance mapped onto two colours (flat two-colour look)
+    Long Shadow     hard angled shadow cast from the clip's silhouette (flat-design staple)
+    Repeater Grid   rounded, gapped grid of repeated frames with scrolling offsets
+    Light Leak      warm film-leak streaks drifting across the frame
+   All are ordinary shader effects (GLSL 1.10) with the shared COMMON/common.vert.
+
+11) 3D Transform (internal effect, Distort category)
+   - Sits next to the default Transform. Fields: Position X/Y/Z, Rotation X/Y/Z, Scale,
+     Perspective (camera distance), Anchor Point, Opacity, and the same motion blur rows as the
+     default Transform (Shutter Angle 180, Shutter Phase 0, Blur Samples 16; Shutter Angle 0 turns
+     it off). A still clip never runs the pass - it only runs on frames where the pose changes.
+   - Rotating Y keyframed gives a card flip; X gives a floor/ceiling tilt; Z matches the
+     default effect's roll, so the two effects can be swapped without the clip jumping
+     (same position/anchor conventions, position defaults to the sequence centre).
+   - Implementation: the compositor draws each clip as one quad, so the projection happens on
+     the CPU in effects/internal/threedtransform.cpp: all four corners are rotated and
+     perspective-divided, and each corner carries a perspective weight in its texture Q. The final
+     quad draw in rendering/renderfunctions.cpp now uses glTexCoord4f() so the hardware
+     interpolates the quad projectively (ordinary effects keep Q = 1 and are unaffected).
+   - Motion blur reuses effects/motionblur/ (the Transform/Shake pass), which blurs the clip's
+     source texture before the transform is applied. That pass works from affine motion samples, so
+     each sample's projected quad is approximated by its least squares affine fit: exact for moves,
+     scale and Z rotation, and an approximation for X/Y rotation (the error is a few pixels for the
+     small sub-frame angles a shutter actually spans, while it grows for very large per-frame
+     rotations - the blur stays smooth, it just is not a true projective smear).
+   - Files: effects/internal/threedtransform.cpp/.h, effects/effect.cpp (factory),
+     effects/effectloaders.cpp (registration), effects/effect.h (EFFECT_INTERNAL_TRANSFORM_3D).
+
+12) 2D clips no longer warp
+    compose_sequence() sets the four texture Q values that the quad draw uses for perspective.
+    The bottom-right corner was left uninitialised, so every clip and title picked up a garbage
+    perspective weight in that corner and was sheared as if it stood in 3D space. All four are now
+    1; effects that want real perspective (3D Transform) still overwrite all four corners.
+
+13) Rich text / titles
+    - Renderer rewritten (effects/internal/textrender.cpp): the document is turned into glyph
+      outlines with QRawFont, so the fill can be a gradient across the whole title, the outline is
+      a real stroke around the letters and the shadow is that same silhouette offset and blurred.
+      Shaping, kerning, line breaking, alignment and per-character formatting still come from
+      QTextDocument.
+    - New fields on the Rich Text effect, appended after the shadow rows so saved projects keep
+      matching rows by position: Gradient Fill, Gradient Color A/B, Gradient Angle, Outline,
+      Outline Color, Outline Width. Shadow keeps its Color/Angle/Distance/Softness/Opacity.
+    - The Edit Text dialog has one rule for all formatting: every toolbar action (family, weight,
+      size, italic, underline, colour) merges a character format into the document - the selection
+      if there is one, otherwise the whole document, and always as the format for text typed next.
+      Previously a change with no selection only affected the next typed character, so picking a
+      font looked like it did nothing.
+      The font combo is non-editable, so its current index always matches the text. An editable
+      QFontComboBox only puts the family into its line edit when the toolbar syncs it from the
+      cursor, which left currentIndex() at -1 and is what made font picks stop being reported.
+      The title's stored value is simply the document's own HTML, so the chain is
+      dialog -> document -> stored HTML -> renderer with one source of truth and no fix-ups at
+      export time.
+
+14) Adjustment layers
+    - Timeline -> Add -> Adjustment Layer. The clip has no media: compose_sequence() hands it the
+      frame already rendered below it (clips are drawn bottom-up), runs the clip's own effect chain
+      on that frame and composites the result back. Effects that leave transparent areas therefore
+      behave as masked adjustments.
+    - Saved as adjustment="1" on the clip, and copied/pasted with the clip. It is a pass-through
+      until an effect is added.
+
+15) More motion-graphics effects (effects/community/, category "Motion Graphics")
+    Zoom Blur, Chromatic Aberration, Glitch Blocks, Grid Collage, Spotlight, Halftone
+
+16) Title Text (new text generator, Render category)
+    - Timeline -> Add -> Title now creates a clip with the Title Text effect instead of Rich Text.
+    - It renders through the same code as Rich Text (text field, padding, position, vertical align,
+      auto-scroll, gradient, outline, shadow), but adds Font, Size, Bold, Italic and Color as effect
+      fields and merges them over the whole text before it is laid out. The panel's font is therefore
+      authoritative: it cannot be lost to whatever the stored HTML happens to contain, which is what
+      made titles ignore the font set in the Edit Text dialog.
+    - Because those five fields cover the whole text, per-character emphasis and colour from the
+      Edit Text dialog are overridden by them; use the effect's Bold/Italic/Color fields instead.
+      Alignment, padding, position and auto-scroll still come from the text itself.
+    - Existing projects keep using the Rich Text effect; the new generator is only used for newly
+      created titles. Both effects still share effects/internal/textrender.cpp.
+
+Toolchain used
+--------------
+  MSYS2 MinGW-w64, GCC 16.2.0
+  Qt 5.15.19 (mingw-w64-x86_64-qt5-base / qt5-multimedia / qt5-svg)
+  FFmpeg 4.4 shared dev, unpacked to ../third_party/ffmpeg-4.4-full_build-shared
+  CMake 4.4.5, Ninja
+
+Rebuild from source
+-------------------
+  cmake -S Olive -B build -G Ninja -DCMAKE_BUILD_TYPE=Release ^
+        -DCMAKE_CXX_COMPILER=C:/msys64/mingw64/bin/g++.exe ^
+        -DQt5_DIR=C:/msys64/mingw64/lib/cmake/Qt5 ^
+        -DCMAKE_PREFIX_PATH=E:/slopfxolive/third_party/ffmpeg-4.4-full_build-shared
+  cmake --build build
+
+Important: the compiler must be on PATH when configuring, otherwise CMake's
+compiler check fails. Olive 0.1.2 calls av_register_all() and uses
+AVFrame::channels / AVCodecContext::channels, which were removed in FFmpeg 5.0.
+It must be built against FFmpeg 4.x (3.4-4.4). MSYS2's current FFmpeg 9 package
+will not work.
+
+Using the motion blur
+---------------------
+  Transform: add the effect to a clip, keyframe Position/Scale/Rotation, and
+  keep Shutter Angle above 0.
+  Shake: add the effect and keep Shutter Angle above 0; the blur follows the
+  shake instead of the animation curve.
+
+  Lower Blur Samples for speed, raise it for a smoother blur. Shutter Angle
+  180 is a film-style half-frame exposure; 360 smears across a whole frame.
+
+Using Playback Quality
+----------------------
+  Playback > Playback Quality > Full / 1/2 / 1/4 / 1/8 / 1/16. It only affects
+  the viewers; exports always render at full resolution.
+
+This package is portable: the "portable" marker file makes OlivePLUS keep its
+settings and cache inside this folder instead of %APPDATA%.
+
+17) Null layers and parenting
+    - Timeline -> Add -> Null Layer creates a clip with no media that draws nothing. It starts
+      with a Transform effect (3D Transform can be added to it as usual), so its position,
+      rotation, scale and anchor are keyframable like any other layer.
+    - Any clip can be parented to a null layer from right-click -> Properties: the dialog has a new
+      Parent field listing the sequence's null layers. With a parent set, the parent's Transform /
+      3D Transform is applied on top of the clip's own transform - the After Effects order - so
+      animating the null moves, rotates and scales every child. Parenting is saved with the project
+      (parent="<index>" on the clip) and is undoable.
+    - Several clips can be parented at once (select them, then Properties); changing the parent of
+      a multi-selection to "(multiple)" leaves it alone.
+    - Chains work: a null can itself be parented to another null. Loops are prevented both in the
+      dialog and in the compositor (the compositor also caps the chain at 32 levels).
+    - Deleting a null clears the parent of its children, and undo restores it.
+    - Implementation:
+        timeline/clip.cpp/.h            (null_ flag, parent_ pointer, saved/copied state)
+        effects/effect.h/.cpp           (Effect::GetTransformMatrix(), the parenting hook)
+        effects/internal/transformeffect.cpp/.h
+        effects/internal/threedtransform.cpp/.h   (affine matrix of the projection)
+        global/math.cpp/.h              (column-major 4x4 helpers)
+        rendering/renderfunctions.cpp   (build_parent_matrix() -> glMultMatrixd() per clip)
+        panels/project.cpp, project/loadthread.cpp, undo/undo.cpp/.h,
+        dialogs/clippropertiesdialog.cpp/.h
+    - Notes:
+        * Only Transform and 3D Transform contribute to parenting, as intended. Opacity and blend
+          mode of a parent are not inherited (matching After Effects).
+        * 3D Transform contributes its affine part (position, rotation, scale, anchor); its
+          perspective division is not passed to children, since a child would need per-vertex
+          perspective weights of its own.
+        * The viewer's gizmos are moved into the parented space so they sit on the image, but a
+          gizmo drag still writes values in the clip's own space: with a rotated or scaled parent
+          the dragged direction will not match the mouse exactly.
+        * A copied/pasted clip starts unparented (its parent may not exist in the target sequence).
+
+18) Shape generator
+    - Timeline -> Add -> Shape, or the "Shape" effect from the Effect Library (Render), paints a
+      vector shape into the clip with QPainter, so edges stay clean at any size. It is a generator
+      like Solid/Title, so Transform, blur and every other effect still apply on top.
+    - Options (all keyframable effect fields):
+        Shape          Rectangle, Ellipse, Polygon, Star, Line
+        Size           Width, Height
+        Position       X, Y (sequence pixels, origin at the sequence centre)
+        Rotation
+        Corner Radius  (rounded rectangles)
+        Points         (polygon/star point count, 3-64)
+        Star Inner Radius
+        Fill           on/off, Fill Color
+        Gradient       on/off, Gradient Colors A/B, Gradient Angle
+        Stroke         on/off, Stroke Color, Stroke Width
+        Trim Start / Trim End / Trim Offset   (animated stroke-on, works for every shape)
+        Opacity
+        Feather        (three-pass box blur on the frame's alpha, slides in O(pixels))
+    - Fields that don't apply to the selected shape type or options are disabled automatically.
+    - Implementation: effects/internal/shapeeffect.cpp/.h, effects/effect.h (factory id),
+      effects/effect.cpp, effects/effectloaders.cpp, ui/timelinewidget.cpp (ADD_OBJ_SHAPE).
+
+19. Blending Modes (November 2026)
+    - The Transform effect's "Blend Mode" combo now offers the full standard set instead of only
+      "Normal". The list is BlendMode in effects/effect.h, and that order is the contract with
+      effects/internal/blending.frag:
+        Normal, Darken, Multiply, Color Burn, Linear Burn, Darker Color, Lighten, Screen,
+        Color Dodge, Linear Dodge (Add), Lighter Color, Overlay, Soft Light, Hard Light,
+        Vivid Light, Linear Light, Pin Light, Hard Mix, Difference, Exclusion, Subtract, Divide,
+        Hue, Saturation, Color, Luminosity
+    - Modes run as a shader (HSL-style Hue/Saturation/Color/Luminosity included), because the
+      fixed-function pipeline cannot express most of them. In rendering/renderfunctions.cpp the
+      frame rendered so far is snapshotted into the second back buffer, then blend_mode_program
+      combines that background with the clip and writes the finished frame with GL blending off.
+    - Normal still takes the old fast path, so clips that never touch the combo cost nothing.
+    - Opacity multiplies the clip's coverage before blending, so a half-opacity Multiply clip is a
+      half-strength multiply rather than a multiply of a half-bright clip.
+    - Known limitation: blend modes composite against the sequence so far, so a mode only sees the
+      clips below it, exactly like the fixed-function path before it. Blending inside a nested
+      sequence blends against that sequence's own contents.
+
+20. Lighting And Stylize Effect Pack (November 2026)
+    - Twelve new GLSL effects in effects/community. Because the build already copies that whole
+      folder next to the executable, no build list changed; they appear in Effect Library under
+      their own categories.
+    - Lighting:
+        God Rays            radial light shafts from a keyframable source point; threshold, length,
+                            decay, intensity, ray colour, and a Screen/Add mix
+        Deep Glow           glow after Plugin Everything's Deep Glow, built as a pyramid of
+                            Gaussian-blurred copies of the bright pass: level 1 is blurred at
+                            Radius, each next level is progressively softer, and the last is at
+                            Deep Radius. Passes (1-64, default 5) sets how many levels are added,
+                            so more passes = a finer gradient between the two radii rather than
+                            extra reach, and Deep Mix weights the softer levels. The Gaussian is
+                            sampled on concentric rings (81 taps per level), each ring rotated by
+                            the golden angle with a small radial stagger, so the taps spiral
+                            instead of lining up on a few radial directions - that alignment was
+                            what made an earlier build streaking like an anamorphic flare. Also
+                            threshold (soft knee), exposure, gamma, saturation and tint
+        Anamorphic Streak   horizontal lens flare streaks pulled from the bright areas
+        Volumetric Fog      animated layered-noise haze lit by a point light, with the fog density
+                            breaking the light into soft shafts
+        Light Sweep         soft band of light across the frame; keyframe Position to sweep a shine
+                            over a logo or title
+    - Stylize:
+        Pencil Sketch       Sobel edges as graphite lines on grainy paper
+        Comic Ink           posterised flats with ink outlines
+        Bleach Bypass       silver-retention look: desaturated, contrasty, slightly metallic
+        Cross Process       per-channel film curves plus split-toned shadows and highlights
+        Threshold           two-tone matte with softness and invert
+        Stained Glass       Voronoi shards of flat colour with leaded grout lines
+        Hex Mosaic          the frame rebuilt from flat hexagonal tiles
+    - All of them preserve the clip's alpha and are keyframable like every other effect. Blur-like
+      ones sample the frame repeatedly (God Rays 48 taps, Deep Glow 32, Anamorphic Streak 64), so
+      they are the expensive ones in this pack; play at reduced Playback Quality while grading them.
+21. Null/Shape Layers, After Effects Parenting And A Preview Quality Button (November 2026)
+    - Fixed: Null Layer and Shape could not be placed on a video track. Their types were missing
+      from the video/audio test in TimelineWidget::mousePressEvent(), so the ghost was only
+      accepted on audio tracks, where the new clip was then given audio effects instead. Both are
+      now video objects like Solid/Title/Bars/Adjustment.
+    - Null layers now render nothing at all. Previously a null went through the effect chain with
+      no source texture, so the Transform's motion blur pass sampled an unbound texture and the
+      result was drawn over the sequence - a null could black out (or white out) everything below
+      it. rendering/renderfunctions.cpp now runs only the coords effects for a null (so its gizmos
+      still follow its Transform), and skips the shader passes, transitions and the final
+      composite draw. A null is a pure transform carrier, as in After Effects.
+    - Parenting is additive, never a "set": the parent's Transform/3D Transform matrix is applied
+      on top of the child's own transform, so the child's own position/rotation/scale values stay
+      exactly what they are and the parent's values are added (position), added (rotation) and
+      multiplied (scale) around the parent's anchor. Composition order is the After Effects one:
+      the clip's own transform first, each ancestor after it, up to 32 links.
+    - Parenting is quick to use: right-click a video clip on the timeline -> Parent -> pick a null
+      layer (listed first) or any other video clip, or None. The current parent is checked. The
+      link is a normal undoable action (SetClipParentCommand), loops are refused, and the clip
+      tooltip now shows "Parent: <name>". The Clip Properties dialog's Parent combo also accepts
+      any video clip instead of null layers only, matching After Effects.
+    - Preview quality button: the viewer toolbar (in both the sequence and media viewers) has a
+      button that shows the current Playback Quality ("Full", "1/2", "1/4", "1/8", "1/16") and
+      opens the same list. It changes the same Config::playback_quality as the Playback menu, so
+      both stay in sync, and both viewers rebuild their buffers at the new resolution. Exports are
+      never affected.
+    - Files: ui/timelinewidget.cpp/.h (placement switch, Parent menu, set_selected_parent,
+      tooltip), rendering/renderfunctions.cpp (null layer path), panels/viewer.cpp/.h and
+      ui/mainwindow.cpp/.h (quality button and set_playback_quality_to),
+      dialogs/clippropertiesdialog.cpp (any video clip can be a parent).
+22. Parent indicator, adjacent-track parenting, 3D null (November 2026)
+    - Clips that have a parent now show it in the timeline: a dark badge in the bottom-right
+      corner of the clip reading "Parent: <name>" (elided to fit). It is only drawn when the
+      track is tall enough to fit a second line of text, so short tracks keep just the name. The
+      tooltip still shows the full link.
+    - Parent choices are now local: the timeline Parent submenu and the Clip Properties Parent
+      combo only list clips on the track directly above and the track directly below the
+      selection, instead of every video clip in the sequence. Audio tracks are never listed. If
+      the clip's current parent sits on another track it is kept in the list, so opening the
+      properties dialog can't silently clear an existing link.
+    - New object type "3D Null Layer..." in the Timeline Add menu: a null layer that starts with
+      both a Transform and a 3D Transform effect, so it carries a Z position and X/Y/Z rotation
+      for the clips parented to it. The regular "Null Layer" is unchanged. The 3D flag is saved
+      with the project (clip attribute "null3d") and copied with the clip.
+    - Review notes from this pass: a null layer's skipped draw still balances the GL matrix stack
+      (glPushMatrix/glPopMatrix sit outside the composite draw), so a null never leaks its parent
+      matrix into the clips below it; parent composition stays additive and the child's own
+      Transform values are untouched.
+    - Files: timeline/clip.cpp/.h (Is3DNullLayer, track_is_adjacent_to), panels/timeline.cpp/.h
+      (ADD_OBJ_NULL_3D and its menu entry), ui/timelinewidget.cpp (placement case, creation case,
+      Parent menu filter, parent badge), dialogs/clippropertiesdialog.cpp (adjacent filter),
+      panels/project.cpp and project/loadthread.cpp (save/load of null3d).
+23. Rename layers on the timeline (November 2026)
+    - Layers can now be renamed in place: right-click a clip (or several) -> "Rename Layer", or
+      press F2 while the timeline has focus. A single-line editor appears over the selected clip,
+      pre-filled with the current name and fully selected, so typing replaces it.
+    - Enter or clicking away commits, Escape cancels. The rename is an undoable
+      RenameClipCommand, so Ctrl+Z restores the old name, and the timeline repaints immediately.
+      Works for footage clips, generators, adjustment layers, null layers and 3D nulls.
+    - Multi-selection renames the clip the editor is placed over (the first selected one), the same
+      way After Effects renames one layer at a time; the Clip Properties dialog's Name field still
+      renames several clips at once.
+    - Files: ui/timelinewidget.cpp/.h (rename_editor, begin_rename, finish_rename, cancel_rename,
+      eventFilter, F2 shortcut, context menu entry).
+24. Real 3D parenting and a Camera layer (November 2026)
+    - A 3D null now carries a single effect: the 3D Transform. The flat Transform is no longer
+      added to it, so its position/rotation/scale can never come from two places at once.
+    - Parenting is no longer faked in the modelview. A clip with a 3D Transform composes its parent
+      chain in scene space inside ThreeDTransformEffect::Project(): the parent matrix is multiplied
+      onto the clip's own transform and the result is projected with a real perspective divide per
+      corner, so a child of a rotated 3D null is foreshortened in depth instead of being sheared by
+      a flat matrix.
+    - A 3D null only drives 3D layers. A clip without a 3D Transform ignores a 3D parent entirely
+      (earlier it inherited a flattened copy of the null's matrix). A 2D null still parents 2D
+      clips through the modelview matrix exactly as before.
+    - The compositor also skips its own parent matrix for clips that have a 3D Transform, so the
+      chain is never applied twice.
+    - New "Camera..." object in the Timeline Add menu, plus a "Camera" effect in Effects. A camera
+      layer draws nothing and holds Position (X/Y/Z), Point of Interest (X/Y/Z) and Zoom. It is
+      read only by the 3D Transform effect, so - like a camera in After Effects - it acts on 3D
+      layers only; a 2D clip is unaffected.
+    - While a camera layer is active in the sequence it replaces the 3D Transform's own
+      "Perspective" distance. With no camera layer, the effect keeps using that distance exactly as
+      before, so existing projects render unchanged. Moving the camera or changing Zoom changes the
+      apparent depth of 3D layers, which is what makes the space read as real 3D.
+    - Camera layers are saved with the project (clip attribute "camera") and copied with the clip.
+    - Files: effects/internal/cameraeffect.cpp/.h (new), effects/effect.h/.cpp and
+      effects/effectloaders.cpp (EFFECT_INTERNAL_CAMERA), effects/internal/threedtransform.cpp/.h
+      (scene-space composition + camera projection), rendering/renderfunctions.cpp/.h
+      (build_parent_matrix(..., for_3d), 3D-parent rules, camera/null layers draw nothing),
+      global/math.cpp/.h (mat4_transform_point_3d), timeline/clip.cpp/.h (IsCameraLayer),
+      panels/timeline.cpp/.h (ADD_OBJ_CAMERA), ui/timelinewidget.cpp (creation case),
+      panels/project.cpp and project/loadthread.cpp (save/load of the camera flag).
+25. Alpha-locked text stylisers and displacement distorters (November 2026)
+    - Five new shader effects, installed in effects/community (and copied to build/effects and the
+      runtime dist folder):
+      * Gradient Sweep (Stylize) - a linear gradient across the layer with angle, offset and an
+        optional "Keep Luminance" so glyph shapes still read through the colour.
+      * Alpha Bevel (Stylize) - lights the gradient of the alpha channel, so text and shapes get an
+        embossed rim; only the rim is lit, the flat middle of a glyph is untouched.
+      * Inner Glow (Stylize) - glows inwards from the edge of the alpha over a selectable radius.
+      These three were first shipped under a "Text" category; they are now in "Stylize" (the XML
+      category attribute in their .xml files), so they sit with the rest of the look/stylise set.
+      A sixth effect, Gradient Ramp, was dropped again: it never produced the expected result and
+      Gradient Sweep covers the same job.
+      * Displacement Map (Distort) - fractal-noise displacement in pixels, with scale, rotation,
+        animation speed and edge clamp.
+      * Turbulent Warp (Distort) - two decorrelated noise fields plus a radial twist (domain warp),
+        for melting/smearing distortion.
+    - Why they stay inside the layer: every one of them undoes the compositor's premultiplied
+      colour (rgb / alpha), does its work, then writes the result back premultiplied with the
+      layer's original alpha (rgb * a, a). Alpha Bevel and Inner Glow additionally derive their
+      look from neighbouring alpha, so they can only appear on the inside of an edge. On a Title
+      or Text clip the result is that the glyphs get styled and the transparent area of the frame
+      stays completely untouched.
+    - The two distorters sample the input at displaced coordinates and pass the sampled colour
+      (premultiplied) straight through, so a distorted layer keeps its alpha shape as it warps.
+    - Files: effects/community/{gradientSweep,alphaBevel,innerGlow,displacementMap,
+      turbulentWarp}/*.xml and *.frag.
+26. Version 1.0.1 and a Changelog in Help (November 2026)
+    - Version string is now "OlivePLUS 1.0.1 | Alpha" (global/global.cpp), so it shows in the
+      window title, the About box, the welcome dialog and `--version`.
+    - Help > Changelog... opens a new ChangelogDialog with two tabs:
+        Changelog   a readable summary of everything OlivePLUS changes compared to vanilla
+                    Olive 0.1.2, grouped by area (playback, 3D/parenting, layers, text, effects,
+                    interface, export, fixes).
+        Build Notes the full BUILD-NOTES.txt, shown in a monospace, non-wrapping browser.
+    - Both documents are compiled into the executable as Qt resources
+      (changelog/changelog.qrc -> :/changelog/changelog.html and :/changelog/buildnotes.txt), so
+      they cannot go missing when the program is copied around. buildnotes.txt is a copy of this
+      BUILD-NOTES.txt; re-copy it there when the notes change.
+    - Files: dialogs/changelogdialog.cpp/.h, changelog/{changelog.html,buildnotes.txt,
+      changelog.qrc}, global/global.cpp/.h (open_changelog_dialog), ui/mainwindow.cpp/.h
+      (Help action), CMakeLists.txt (sources and OLIVE_RESOURCES).
+27. 3D transforms of parented layers pivot on the null (November 2026)
+    - Previously every 3D layer rotated and scaled around its own centre, even when it was parented
+      to a 3D null, so animating the null spun each child in place and the group never read as one
+      object that moves from a central point.
+    - Now, when a 3D parent contributes to the chain, ThreeDTransformEffect::Project() applies the
+      layer's rotation and scale before its position. The origin of that parent space is the centre
+      of the null, so a parented layer's 3D transform turns and scales it around the null instead of
+      around itself, and several children move together from that one central point.
+    - Unparented 3D layers are untouched: they still rotate and scale around their own anchor/centre,
+      and a camera layer still only projects the scene without moving any pivot.
+    - build_parent_matrix() gained an optional out_used_3d_parent flag so the 3D Transform knows
+      whether a 3D parent is driving it (used by rendering and by the motion blur pose sampling,
+      which goes through Project()).
+    - Files: effects/internal/threedtransform.cpp (Project), rendering/renderfunctions.cpp/.h
+      (build_parent_matrix out_used_3d_parent).
+28. A 3D null can drive the camera layer (November 2026)
+    - CameraEffect::ProjectPoint() now applies the camera layer's own parent chain to both the camera
+      position and its point of interest before building the view basis. Parenting a camera layer to
+      a 3D null therefore makes a camera rig: the null's position moves (trucks) the camera, its
+      rotation orbits the camera around the null, its scale/Z changes how far away it sits, and the
+      camera keeps aiming at the transformed point of interest. No camera keyframes are needed.
+    - The parent transform is evaluated on the camera layer's own clip time, in the same scene space
+      the 3D Transform uses, so the rig, the null and the 3D layers all share one space.
+    - Files: effects/internal/cameraeffect.cpp/.h.
+29. Colour swatches in the effect controls (November 2026)
+    - A colour field's button no longer stays blank: ColorButton used to show its colour through the
+      widget palette, which the application-wide Fluent stylesheet overrides (it paints every
+      QPushButton background itself), so the current colour was invisible in the effect controls.
+    - The button now carries a widget-level stylesheet drawing the colour as its background with a
+      contrasting border, an accent border on hover and a faded fill when disabled, so it always
+      reads as the current value - including in the Text/Rich Text colour rows and the Edit Text
+      dialog.
+    - Files: ui/colorbutton.cpp.
+30. Glow effects: method pickers and no more streaking (November 2026)
+    - The glow effects used a fixed set of sample directions, which left a star of spokes between
+      neighbouring pixels - the "streaks" that were still visible in the halo, especially on text and
+      thin shapes. Every rotational kernel is now rotated by a per-pixel (and per-level) angle from
+      gl_FragCoord, so the taps of adjacent pixels never line up and the structure reads as fine
+      noise instead of streaks.
+    - Each glow effect also gained a Method picker (a combo field appended after the existing rows,
+      so old projects keep their values and load with the default method):
+      * Deep Glow  - Gaussian (soft, even falloff), Bokeh (flat disc, round bokeh highlights),
+                     Anamorphic (the kernel stretched 4x sideways for a wide flare smear).
+      * Neon Glow  - Soft Halo (new default: edge spread over a jittered ring kernel), Crisp Lines
+                     (the previous hard edge look), Wide Bloom (crisp core plus a wide soft spread).
+      * Inner Glow - Soft (new default: jittered directions averaged, smooth falloff), Crisp (the
+                     nearest outside alpha wins, hard inner line), Directional (gathered towards
+                     light from the top left).
+      * Bloom      - Gaussian (new default: jittered Gaussian taps), Box (the original 3x3 mip
+                     blur), Bokeh (flat disc of taps).
+    - Bloom also declares #version 110 explicitly now.
+    - Files: effects/community/{deepglow,neonGlow,innerGlow,bloom}/*.xml and *.frag.

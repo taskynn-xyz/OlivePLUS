@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Chromatic Aberration" category="Motion Graphics">
+	<row name="Amount">
+		<field type="double" min="0" default="0.35" max="3" id="amount"/>
+	</row>
+	<row name="Angle">
+		<field type="double" min="0" default="0" max="360" id="angle"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="chromaticAberration.frag"/>
+</effect>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Hologram" category="Stylize">
+	<row name="Chroma">
+		<field type="double" min="0" default="2" max="20" id="chroma"/>
+	</row>
+	<row name="Scanlines">
+		<field type="double" min="50" default="400" max="2000" id="scanlines"/>
+	</row>
+	<row name="Tracking Bands">
+		<field type="double" min="0" default="0.6" max="1" id="bands"/>
+	</row>
+	<row name="Flicker">
+		<field type="double" min="0" default="0.5" max="1" id="flicker"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="hologram.frag"/>
+</effect>

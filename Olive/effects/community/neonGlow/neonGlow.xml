@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Neon Glow" category="Stylize">
+	<row name="Edge Width">
+		<field type="double" min="0.5" default="1.5" max="12" id="thickness"/>
+	</row>
+	<row name="Threshold">
+		<field type="double" min="0" default="0.12" max="1" id="threshold"/>
+	</row>
+	<row name="Glow Color">
+		<field type="color" hex="#40e0ff" id="glow_color"/>
+	</row>
+	<row name="Intensity">
+		<field type="double" min="0" default="2.0" max="8" id="intensity"/>
+	</row>
+	<row name="Base Image">
+		<field type="double" min="0" default="0.25" max="1" id="base_amount"/>
+	</row>
+	<row name="Method">
+		<field type="combo" default="0" id="method">
+			<option>Soft Halo</option>
+			<option>Crisp Lines</option>
+			<option>Wide Bloom</option>
+		</field>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="neonGlow.frag"/>
+</effect>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Lens Flare" category="Stylize">
+	<row name="Threshold">
+		<field type="double" min="0" default="0.75" max="1" id="threshold"/>
+	</row>
+	<row name="Streak">
+		<field type="double" min="0" default="0.6" max="2" id="streak"/>
+	</row>
+	<row name="Ghosts">
+		<field type="double" min="0" default="0.5" max="2" id="ghosts"/>
+	</row>
+	<row name="Glow">
+		<field type="double" min="0" default="1" max="3" id="glow"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="lensFlare.frag"/>
+</effect>

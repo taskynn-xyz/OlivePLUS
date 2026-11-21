@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Stained Glass" category="Stylize">
+	<row name="Cell Size">
+		<field type="double" min="2" max="80" default="12" id="cells"/>
+	</row>
+	<row name="Grout Width">
+		<field type="double" min="0" max="0.5" default="0.12" id="grout"/>
+	</row>
+	<row name="Grout Colour">
+		<field type="color" hex="#101010" id="groutcolor"/>
+	</row>
+	<row name="Flatness">
+		<field type="double" min="0" max="1" default="0.75" id="flatness"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="stainedglass.frag"/>
+</effect>

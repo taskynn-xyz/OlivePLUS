@@ -1,0 +1,16 @@
+# build output
+build/
+build-*/
+dist/
+stage/
+*.zip
+
+# bundled Windows FFmpeg (downloaded on demand, see .github/workflows/build.yml)
+third_party/
+
+# editor / OS clutter
+.vscode/
+.idea/
+*.user
+Thumbs.db
+.DS_Store

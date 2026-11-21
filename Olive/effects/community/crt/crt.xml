@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="CRT" category="Stylize">
+	<row name="Scanlines">
+		<field type="double" min="0" default="260" max="1500" id="lines"/>
+	</row>
+	<row name="Chroma Bleed">
+		<field type="double" min="0" default="1.5" max="20" id="chroma"/>
+	</row>
+	<row name="Static">
+		<field type="double" min="0" default="0.12" max="1" id="noise_amount"/>
+	</row>
+	<row name="Vignette">
+		<field type="double" min="0" default="0.6" max="1" id="vignette_amount"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="crt.frag"/>
+</effect>

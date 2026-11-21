@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Grid Collage" category="Motion Graphics">
+	<row name="Columns">
+		<field type="double" min="1" default="3" max="8" id="columns"/>
+	</row>
+	<row name="Rows">
+		<field type="double" min="1" default="3" max="8" id="rows"/>
+	</row>
+	<row name="Gap">
+		<field type="double" min="0" default="0.04" max="0.3" id="gap"/>
+	</row>
+	<row name="Zoom">
+		<field type="double" min="1" default="1.6" max="6" id="zoom"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="gridCollage.frag"/>
+</effect>

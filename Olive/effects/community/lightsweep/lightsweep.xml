@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Light Sweep" category="Lighting">
+	<row name="Position">
+		<field type="double" min="-0.5" max="1.5" default="0.5" id="position"/>
+	</row>
+	<row name="Width">
+		<field type="double" min="0.001" max="1" default="0.2" id="width"/>
+	</row>
+	<row name="Angle">
+		<field type="double" min="-360" max="360" default="30" id="angle"/>
+	</row>
+	<row name="Hardness">
+		<field type="double" min="0" max="1" default="0.4" id="hardness"/>
+	</row>
+	<row name="Intensity">
+		<field type="double" min="0" max="6" default="1.2" id="intensity"/>
+	</row>
+	<row name="Sweep Colour">
+		<field type="color" hex="#ffffff" id="sweepcolor"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="lightsweep.frag"/>
+</effect>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Lava Lamp" category="Motion Graphics">
+	<row name="Warp">
+		<field type="double" min="0" default="0.35" max="1" id="amount"/>
+	</row>
+	<row name="Blob Size">
+		<field type="double" min="0.5" default="2" max="6" id="blobs"/>
+	</row>
+	<row name="Speed">
+		<field type="double" min="0" default="1" max="4" id="speed"/>
+	</row>
+	<row name="Tint Mix">
+		<field type="double" min="0" default="0.5" max="1" id="mixamount"/>
+	</row>
+	<row name="Color A">
+		<field type="color" hex="#ff4d6d" id="colora"/>
+	</row>
+	<row name="Color B">
+		<field type="color" hex="#7b2cbf" id="colorb"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="lavaLamp.frag"/>
+</effect>

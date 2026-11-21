@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Spotlight" category="Motion Graphics">
+	<row name="Light Colour">
+		<field type="color" hex="#ffd9a0" id="lightcolor"/>
+	</row>
+	<row name="Centre X">
+		<field type="double" min="0" default="0.5" max="1" id="centerx"/>
+	</row>
+	<row name="Centre Y">
+		<field type="double" min="0" default="0.5" max="1" id="centery"/>
+	</row>
+	<row name="Radius">
+		<field type="double" min="0" default="0.45" max="2" id="radius"/>
+	</row>
+	<row name="Softness">
+		<field type="double" min="0" default="0.35" max="1" id="softness"/>
+	</row>
+	<row name="Intensity">
+		<field type="double" min="0" default="0.6" max="2" id="intensity"/>
+	</row>
+	<row name="Darken Edges">
+		<field type="double" min="0" default="0.65" max="1" id="darken"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="spotlight.frag"/>
+</effect>

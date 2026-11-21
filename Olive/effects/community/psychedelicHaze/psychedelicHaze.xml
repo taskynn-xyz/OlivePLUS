@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Psychedelic Haze" category="Stylize">
+	<row name="Warp">
+		<field type="double" min="0" default="0.5" max="1" id="amount"/>
+	</row>
+	<row name="Scale">
+		<field type="double" min="1" default="6" max="20" id="scale"/>
+	</row>
+	<row name="Speed">
+		<field type="double" min="0" default="1" max="4" id="speed"/>
+	</row>
+	<row name="Hue">
+		<field type="double" min="0" default="0" max="360" id="hue"/>
+	</row>
+	<row name="Saturation">
+		<field type="double" min="0" default="0.7" max="1" id="saturation"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="psychedelicHaze.frag"/>
+</effect>

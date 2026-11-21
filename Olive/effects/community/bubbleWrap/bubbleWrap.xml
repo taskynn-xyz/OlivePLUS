@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Bubble Wrap" category="Stylize">
+	<row name="Bubble Size">
+		<field type="double" min="5" default="20" max="60" id="bubblesize"/>
+	</row>
+	<row name="Refraction">
+		<field type="double" min="0" default="0.5" max="1" id="refraction"/>
+	</row>
+	<row name="Highlight">
+		<field type="double" min="0" default="0.8" max="2" id="highlight"/>
+	</row>
+	<row name="Speed">
+		<field type="double" min="0" default="0.6" max="3" id="speed"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="bubbleWrap.frag"/>
+</effect>

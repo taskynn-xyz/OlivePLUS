@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Dither Crush" category="Stylize">
+	<row name="Levels">
+		<field type="double" min="2" default="4" max="32" id="levels"/>
+	</row>
+	<row name="Dither">
+		<field type="double" min="0" default="1" max="1" id="dither"/>
+	</row>
+	<row name="Pixel Size">
+		<field type="double" min="1" default="1" max="24" id="pixel_size"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="ditherCrush.frag"/>
+</effect>

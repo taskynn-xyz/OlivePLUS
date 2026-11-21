@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Mirror World" category="Distort">
+	<row name="Segments">
+		<field type="double" min="2" default="8" max="32" id="segments"/>
+	</row>
+	<row name="Zoom">
+		<field type="double" min="0.2" default="1.4" max="6" id="zoom"/>
+	</row>
+	<row name="Spin">
+		<field type="double" min="-1" default="0.05" max="1" id="spin"/>
+	</row>
+	<row name="Rings">
+		<field type="double" min="0" default="1" max="1" id="rings"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="mirrorWorld.frag"/>
+</effect>

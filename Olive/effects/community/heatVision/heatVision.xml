@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Heat Vision" category="Stylize">
+	<row name="Contrast">
+		<field type="double" min="0.1" default="1.2" max="4" id="contrast"/>
+	</row>
+	<row name="Glow">
+		<field type="double" min="0" default="0.35" max="1" id="glow"/>
+	</row>
+	<row name="Shift">
+		<field type="double" min="-1" default="0" max="1" id="shift"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="heatVision.frag"/>
+</effect>

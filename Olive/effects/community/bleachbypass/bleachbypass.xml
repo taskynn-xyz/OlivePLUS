@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Bleach Bypass" category="Stylize">
+	<row name="Amount">
+		<field type="double" min="0" max="1" default="1" id="amount"/>
+	</row>
+	<row name="Saturation">
+		<field type="double" min="0" max="2" default="0.35" id="saturation"/>
+	</row>
+	<row name="Contrast">
+		<field type="double" min="0" max="2" default="0.4" id="contrast"/>
+	</row>
+	<row name="Lift">
+		<field type="double" min="0" max="0.3" default="0.02" id="lift"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="bleachbypass.frag"/>
+</effect>

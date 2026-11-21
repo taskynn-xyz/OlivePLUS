@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="ASCII Mosaic" category="Stylize">
+	<row name="Cell Size">
+		<field type="double" min="4" default="10" max="40" id="cellsize"/>
+	</row>
+	<row name="Contrast">
+		<field type="double" min="0" default="1" max="2" id="contrast"/>
+	</row>
+	<row name="Ink">
+		<field type="color" hex="#ffffff" id="ink"/>
+	</row>
+	<row name="Paper">
+		<field type="color" hex="#000000" id="paper"/>
+	</row>
+	<row name="Colorize">
+		<field type="bool" default="1" id="colorize"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="asciiMosaic.frag"/>
+</effect>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Cross Process" category="Stylize">
+	<row name="Amount">
+		<field type="double" min="0" max="1" default="1" id="amount"/>
+	</row>
+	<row name="Contrast">
+		<field type="double" min="0" max="2" default="0.35" id="contrast"/>
+	</row>
+	<row name="Shadow Tint">
+		<field type="color" hex="#0d2f4a" id="shadowtint"/>
+	</row>
+	<row name="Highlight Tint">
+		<field type="color" hex="#ffe6a8" id="highlighttint"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="crossprocess.frag"/>
+</effect>

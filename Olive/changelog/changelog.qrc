@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/changelog">
+        <file>changelog.html</file>
+        <file>buildnotes.txt</file>
+    </qresource>
+</RCC>

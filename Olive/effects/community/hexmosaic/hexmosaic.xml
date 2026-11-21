@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Hex Mosaic" category="Stylize">
+	<row name="Cell Size">
+		<field type="double" min="4" max="200" default="28" id="cells"/>
+	</row>
+	<row name="Edge Width">
+		<field type="double" min="0" max="0.45" default="0.08" id="edgewidth"/>
+	</row>
+	<row name="Edge Colour">
+		<field type="color" hex="#0a0a0a" id="edgecolor"/>
+	</row>
+	<row name="Mix">
+		<field type="double" min="0" max="1" default="1" id="mixamount"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="hexmosaic.frag"/>
+</effect>

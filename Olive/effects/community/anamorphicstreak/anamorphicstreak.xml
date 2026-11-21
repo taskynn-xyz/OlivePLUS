@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Anamorphic Streak" category="Lighting">
+	<row name="Threshold">
+		<field type="double" min="0" max="1" default="0.7" id="threshold"/>
+	</row>
+	<row name="Length">
+		<field type="double" min="0" max="1.5" default="0.4" id="length"/>
+	</row>
+	<row name="Intensity">
+		<field type="double" min="0" max="8" default="1.6" id="intensity"/>
+	</row>
+	<row name="Falloff">
+		<field type="double" min="0.5" max="6" default="2" id="falloff"/>
+	</row>
+	<row name="Streak Colour">
+		<field type="color" hex="#7fb2ff" id="streakcolor"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="anamorphicstreak.frag"/>
+</effect>

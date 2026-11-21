@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<effect name="Long Shadow" category="Motion Graphics">
+	<row name="Angle">
+		<field type="double" min="0" default="45" max="360" id="angle"/>
+	</row>
+	<row name="Length">
+		<field type="double" min="1" default="40" max="100" id="length_s"/>
+	</row>
+	<row name="Opacity">
+		<field type="double" min="0" default="0.8" max="1" id="opacity"/>
+	</row>
+	<row name="Colour">
+		<field type="color" hex="#000000" id="shadow_color"/>
+	</row>
+	<shader vert="../COMMON/common.vert" frag="longShadow.frag"/>
+</effect>
