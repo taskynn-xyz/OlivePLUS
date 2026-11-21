@@ -15,6 +15,7 @@ Current version: **OlivePLUS 1.0.1 | Alpha**.
 See `Olive/changelog/changelog.html` for the full list.
 
 Note: This fork is vibecoded, don't expect anything to work perfectly lol. (Currently working on improving existing/fixing non functioning features)
+It is quite usable
 
 ## Building
 
