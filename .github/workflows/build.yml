@@ -25,18 +25,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Qt5 only exists for the UCRT64 environment now; MSYS2 has been
+      # retiring MINGW64 and it no longer carries the Qt5 modules we need.
       - uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64
+          msystem: UCRT64
           update: true
           install: >-
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-ninja
-            mingw-w64-x86_64-qt5-base
-            mingw-w64-x86_64-qt5-multimedia
-            mingw-w64-x86_64-qt5-svg
-            mingw-w64-x86_64-qt5-tools
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-qt5-base
+            mingw-w64-ucrt-x86_64-qt5-multimedia
+            mingw-w64-ucrt-x86_64-qt5-svg
+            mingw-w64-ucrt-x86_64-qt5-tools
             unzip
             zip
 
@@ -49,9 +51,10 @@ jobs:
       - name: Configure
         run: |
           FFMPEG_ROOT="$(cygpath -m "$PWD/ffmpeg-${FFMPEG_VERSION}-full_build-shared")"
+          # cmake here is a native Windows binary, so hand it native paths
           cmake -S Olive -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH="/mingw64;$FFMPEG_ROOT" \
+            -DCMAKE_PREFIX_PATH="$(cygpath -m /ucrt64);$FFMPEG_ROOT" \
             -DFFMPEG_ROOT="$FFMPEG_ROOT"
 
       - name: Build
@@ -89,7 +92,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential cmake ninja-build pkg-config \
             qtbase5-dev qtmultimedia5-dev libqt5svg5-dev libqt5opengl5-dev \
-            qttools5-dev-tools libgl1-mesa-dev \
+            qttools5-dev qttools5-dev-tools libgl1-mesa-dev \
             libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev \
             libswscale-dev libswresample-dev \
             frei0r-plugins-dev
@@ -126,12 +129,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install qt@5 ffmpeg@4 pkg-config
+          brew install qt@5 ffmpeg@4 frei0r pkg-config
           brew unlink qt 2>/dev/null || true
 
       - name: Configure
         run: |
-          PREFIXES="$(brew --prefix qt@5);$(brew --prefix ffmpeg@4)"
+          PREFIXES="$(brew --prefix qt@5);$(brew --prefix ffmpeg@4);$(brew --prefix frei0r)"
           cmake -S Olive -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="$PREFIXES" \

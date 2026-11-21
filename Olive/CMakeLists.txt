@@ -466,6 +466,12 @@ add_executable(${OLIVE_TARGET}
 
 target_compile_definitions(${OLIVE_TARGET} PRIVATE ${OLIVE_DEFINITIONS})
 
+# find_package(frei0r) locates frei0r.h but that directory is not a compiler
+# default (e.g. Homebrew on macOS), so put it on the include path explicitly.
+if(FREI0R_FOUND)
+  target_include_directories(${OLIVE_TARGET} PRIVATE ${FREI0R_INCLUDE_DIR})
+endif()
+
 # On Windows the app loads shader effects from <exe dir>/effects, so keep that
 # folder up to date whenever the target is built.
 if(WIN32)
