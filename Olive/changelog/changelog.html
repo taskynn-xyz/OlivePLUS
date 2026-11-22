@@ -160,9 +160,11 @@ FFmpeg formats) is still there underneath.</p>
 
 <h2>Export</h2>
 <ul>
-  <li>An <b>Encoder</b> row in the Export dialog: Software (CPU) or <b>NVIDIA NVENC</b> for
-      H.264/H.265. NVENC is probed with a throwaway encoder before use and silently falls back to
-      the software encoder when no NVIDIA GPU/driver is available, so it can never break an export.</li>
+  <li>An <b>Encoder</b> row in the Export dialog: Software (CPU) or a graphics-card encoder for
+      H.264/H.265 - <b>NVIDIA NVENC</b>, <b>AMD AMF</b> or <b>Intel QuickSync</b>. Only the vendors
+      present in the machine are listed, and each encoder is probed with a throwaway context before
+      use and silently falls back to the software encoder when no compatible GPU/driver or FFmpeg
+      encoder is available, so it can never break an export.</li>
 </ul>
 
 <h2>Fixes and compatibility</h2>

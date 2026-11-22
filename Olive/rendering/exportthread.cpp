@@ -108,32 +108,72 @@ bool ExportThread::SetupVideo() {
 
   const enum AVCodecID codec_id = static_cast<enum AVCodecID>(params_.video_codec);
 
-  // Pick the encoder. With the NVENC profile we ask FFmpeg for the NVIDIA hardware encoder, but
-  // only after opening a throwaway context with it: that way a missing driver (or a non-NVIDIA GPU)
-  // silently falls back to the software encoder instead of failing the export halfway through.
-  bool nvenc = false;
+  // Pick the encoder. With a GPU encoder selected we ask FFmpeg for that vendor's encoder, but only
+  // after opening a throwaway context with it: that way a missing driver (or a card from another
+  // vendor) silently falls back to the software encoder instead of failing the export halfway through.
+  int hardware_encoder = kHardwareEncoderNone;
 
-  if (vcodec_params_.hardware_encoder && (codec_id == AV_CODEC_ID_H264 || codec_id == AV_CODEC_ID_H265)) {
-    const char* hw_name = (codec_id == AV_CODEC_ID_H264) ? "h264_nvenc" : "hevc_nvenc";
-    AVCodec* hw_codec = avcodec_find_encoder_by_name(hw_name);
+  if (vcodec_params_.hardware_encoder != kHardwareEncoderNone
+      && (codec_id == AV_CODEC_ID_H264 || codec_id == AV_CODEC_ID_H265)) {
+    const char* vendor = nullptr;
+    const char* vendor_label = "";
 
-    if (hw_codec != nullptr) {
-      AVCodecContext* probe = avcodec_alloc_context3(hw_codec);
-      probe->width = params_.video_width;
-      probe->height = params_.video_height;
-      probe->pix_fmt = static_cast<AVPixelFormat>(vcodec_params_.pix_fmt);
-      probe->time_base = av_inv_q(av_d2q(params_.video_frame_rate, INT_MAX));
+    switch (vcodec_params_.hardware_encoder) {
+    case kHardwareEncoderNvenc:
+      vendor = "nvenc";
+      vendor_label = "NVENC";
+      break;
+    case kHardwareEncoderAmf:
+      vendor = "amf";
+      vendor_label = "AMF";
+      break;
+    case kHardwareEncoderQsv:
+      vendor = "qsv";
+      vendor_label = "QuickSync";
+      break;
+    }
 
-      if (avcodec_open2(probe, hw_codec, nullptr) >= 0) {
-        vcodec = hw_codec;
-        nvenc = true;
+    if (vendor != nullptr) {
+      const QByteArray hw_name = QStringLiteral("%1_%2")
+          .arg(QString::fromUtf8(codec_id == AV_CODEC_ID_H264 ? "h264" : "hevc"), QString::fromUtf8(vendor))
+          .toUtf8();
+      AVCodec* hw_codec = avcodec_find_encoder_by_name(hw_name.constData());
+
+      if (hw_codec != nullptr) {
+        // Hardware encoders accept a narrow set of pixel formats (QuickSync only takes nv12), so use
+        // their preferred format when the one the software encoder supports isn't in the list.
+        AVPixelFormat hw_pix_fmt = static_cast<AVPixelFormat>(vcodec_params_.pix_fmt);
+        if (hw_codec->pix_fmts != nullptr) {
+          bool supported = false;
+          for (int i=0;hw_codec->pix_fmts[i] != AV_PIX_FMT_NONE;i++) {
+            if (hw_codec->pix_fmts[i] == hw_pix_fmt) {
+              supported = true;
+              break;
+            }
+          }
+          if (!supported) {
+            hw_pix_fmt = hw_codec->pix_fmts[0];
+          }
+        }
+
+        AVCodecContext* probe = avcodec_alloc_context3(hw_codec);
+        probe->width = params_.video_width;
+        probe->height = params_.video_height;
+        probe->pix_fmt = hw_pix_fmt;
+        probe->time_base = av_inv_q(av_d2q(params_.video_frame_rate, INT_MAX));
+
+        if (avcodec_open2(probe, hw_codec, nullptr) >= 0) {
+          vcodec = hw_codec;
+          hardware_encoder = vcodec_params_.hardware_encoder;
+          vcodec_params_.pix_fmt = hw_pix_fmt;
+        } else {
+          qWarning() << vendor_label << "encoder" << hw_name << "could not be opened, using the software encoder";
+        }
+
+        avcodec_free_context(&probe);
       } else {
-        qWarning() << "NVENC encoder" << hw_name << "could not be opened, using the software encoder";
+        qWarning() << vendor_label << "encoder" << hw_name << "is not available in this FFmpeg build";
       }
-
-      avcodec_free_context(&probe);
-    } else {
-      qWarning() << "NVENC encoder" << hw_name << "is not available in this FFmpeg build";
     }
   }
 
@@ -189,7 +229,7 @@ bool ExportThread::SetupVideo() {
   /// H.264 specific settings
   case AV_CODEC_ID_H264:
   case AV_CODEC_ID_H265:
-    if (!nvenc) {
+    if (hardware_encoder == kHardwareEncoderNone) {
       switch (params_.video_compression_type) {
       case COMPRESSION_TYPE_CFR:
         av_opt_set(vcodec_ctx->priv_data, "crf", QString::number(static_cast<int>(params_.video_bitrate)).toUtf8(), AV_OPT_SEARCH_CHILDREN);
@@ -200,7 +240,7 @@ bool ExportThread::SetupVideo() {
 
   }
 
-  if (nvenc) {
+  if (hardware_encoder == kHardwareEncoderNvenc) {
     // NVENC profile. p5/hq is NVIDIA's balanced preset (roughly x264 "medium"); the quality value
     // in the dialog maps straight onto NVENC's own constant-quality scale (lower = better).
     av_opt_set(vcodec_ctx->priv_data, "preset", "p5", 0);
@@ -223,6 +263,48 @@ bool ExportThread::SetupVideo() {
       av_opt_set(vcodec_ctx->priv_data, "rc", "vbr", 0);
       av_opt_set_int(vcodec_ctx->priv_data, "cq",
                      qBound(1, qRound(params_.video_bitrate), 51), 0);
+      // a bitrate is still required by the muxer context, but quality drives the encoder here
+      vcodec_ctx->bit_rate = qMin<int64_t>(40000000,
+                                           qMax<int64_t>(4000000,
+                                                         int64_t(params_.video_width) * params_.video_height));
+    }
+  } else if (hardware_encoder == kHardwareEncoderAmf) {
+    // AMD AMF. "balanced" is the middle of AMF's speed/quality preferences, and the dialog's quality
+    // value maps onto AMF's constant quantiser scale (lower = better), the same scale NVENC uses.
+    av_opt_set(vcodec_ctx->priv_data, "quality", "balanced", 0);
+    vcodec_ctx->gop_size = qMax(1, qRound(params_.video_frame_rate * 2.0));
+    vcodec_ctx->max_b_frames = 0;
+
+    if (params_.video_compression_type == COMPRESSION_TYPE_CBR) {
+      const int64_t bitrate = qRound64(params_.video_bitrate * 1000000);
+      av_opt_set(vcodec_ctx->priv_data, "rc", "cbr", 0);
+      vcodec_ctx->bit_rate = bitrate;
+      vcodec_ctx->rc_max_rate = bitrate;
+      vcodec_ctx->rc_min_rate = bitrate;
+      vcodec_ctx->rc_buffer_size = int(bitrate);
+    } else {
+      const int qp = qBound(1, qRound(params_.video_bitrate), 51);
+      av_opt_set(vcodec_ctx->priv_data, "rc", "cqp", 0);
+      av_opt_set_int(vcodec_ctx->priv_data, "qp_i", qp, 0);
+      av_opt_set_int(vcodec_ctx->priv_data, "qp_p", qp, 0);
+      // a bitrate is still required by the muxer context, but quality drives the encoder here
+      vcodec_ctx->bit_rate = qMin<int64_t>(40000000,
+                                           qMax<int64_t>(4000000,
+                                                         int64_t(params_.video_width) * params_.video_height));
+    }
+  } else if (hardware_encoder == kHardwareEncoderQsv) {
+    // Intel QuickSync. "medium" sits in the middle of its preset list, and setting global_quality
+    // asks it for ICQ, QuickSync's constant quality mode.
+    av_opt_set(vcodec_ctx->priv_data, "preset", "medium", 0);
+    vcodec_ctx->gop_size = qMax(1, qRound(params_.video_frame_rate * 2.0));
+
+    if (params_.video_compression_type == COMPRESSION_TYPE_CBR) {
+      const int64_t bitrate = qRound64(params_.video_bitrate * 1000000);
+      vcodec_ctx->bit_rate = bitrate;
+      vcodec_ctx->rc_max_rate = bitrate;
+      vcodec_ctx->rc_buffer_size = int(bitrate);
+    } else {
+      vcodec_ctx->global_quality = qBound(1, qRound(params_.video_bitrate), 51);
       // a bitrate is still required by the muxer context, but quality drives the encoder here
       vcodec_ctx->bit_rate = qMin<int64_t>(40000000,
                                            qMax<int64_t>(4000000,

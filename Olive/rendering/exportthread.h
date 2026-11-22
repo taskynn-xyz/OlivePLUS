@@ -64,17 +64,35 @@ struct ExportParams {
   long end_frame;
 };
 
+/**
+ * @brief Which hardware encoder to use for an export
+ */
+enum HardwareEncoder {
+  /** Software encoder (libx264/libx265) */
+  kHardwareEncoderNone = 0,
+
+  /** NVIDIA NVENC (h264_nvenc/hevc_nvenc) */
+  kHardwareEncoderNvenc = 1,
+
+  /** AMD AMF (h264_amf/hevc_amf) */
+  kHardwareEncoderAmf = 2,
+
+  /** Intel QuickSync (h264_qsv/hevc_qsv) */
+  kHardwareEncoderQsv = 3
+};
+
 struct VideoCodecParams {
   int pix_fmt;
   int threads;
 
   /**
-   * @brief Encode with the GPU (NVIDIA NVENC) instead of the software encoder
+   * @brief Encode with the GPU instead of the software encoder
    *
-   * Only used for H.264/H.265. If the encoder or driver is unavailable the export falls back to
-   * the equivalent software encoder automatically.
+   * Set to a member of enum HardwareEncoder. Only used for H.264/H.265. If the encoder, the driver
+   * or a card from that vendor is unavailable, the export falls back to the equivalent software
+   * encoder automatically.
    */
-  bool hardware_encoder = false;
+  int hardware_encoder = kHardwareEncoderNone;
 };
 
 class ExportThread : public QThread {

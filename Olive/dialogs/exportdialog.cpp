@@ -35,6 +35,7 @@ extern "C" {
 #include <QPushButton>
 
 #include "global/global.h"
+#include "global/gpu.h"
 #include "dialogs/advancedvideodialog.h"
 #include "panels/panels.h"
 #include "ui/viewerwidget.h"
@@ -547,8 +548,8 @@ void ExportDialog::StartExport() {
       params.video_compression_type = compressionTypeCombobox->currentData().toInt();
       params.video_bitrate = videobitrateSpinbox->value();
 
-      // NVENC profile only applies to H.264/H.265 (the combo is disabled for other codecs)
-      vcodec_params.hardware_encoder = (encoderCombobox->currentData().toInt() == 1);
+      // the GPU encoder only applies to H.264/H.265 (the combo is disabled for other codecs)
+      vcodec_params.hardware_encoder = encoderCombobox->currentData().toInt();
     }
     params.audio_enabled = audioGroupbox->isChecked();
     if (params.audio_enabled) {
@@ -620,17 +621,17 @@ void ExportDialog::vcodec_changed(int index) {
   compressionTypeCombobox->clear();
 
   if (vcodecCombobox->count() > 0) {
-    const bool nvenc_capable = (vcodecCombobox->itemData(index) == AV_CODEC_ID_H264
-                                || vcodecCombobox->itemData(index) == AV_CODEC_ID_H265);
+    const bool gpu_capable = (vcodecCombobox->itemData(index) == AV_CODEC_ID_H264
+                              || vcodecCombobox->itemData(index) == AV_CODEC_ID_H265);
 
     if (encoderCombobox != nullptr) {
-      encoderCombobox->setEnabled(nvenc_capable);
-      if (!nvenc_capable) {
+      encoderCombobox->setEnabled(gpu_capable);
+      if (!gpu_capable) {
         encoderCombobox->setCurrentIndex(0);
       }
     }
 
-    if (nvenc_capable) {
+    if (gpu_capable) {
       compressionTypeCombobox->setEnabled(true);
       compressionTypeCombobox->addItem(tr("Quality-based (Constant Rate Factor)"), COMPRESSION_TYPE_CFR);
       //		compressionTypeCombobox->addItem("File size-based (Two-Pass)", COMPRESSION_TYPE_TARGETSIZE);
@@ -721,14 +722,52 @@ void ExportDialog::setup_ui() {
   vcodecCombobox = new QComboBox(videoGroupbox);
   videoGridLayout->addWidget(vcodecCombobox, 0, 1, 1, 1);
 
-  // Encoder: software (libx264/libx265) or the GPU's NVENC profile (H.264/H.265 only)
+  // Encoder: software (libx264/libx265) or a vendor GPU encoder (H.264/H.265 only). GPU encoders
+  // are only listed for vendors that actually have an adapter in the machine, where the OS lets us
+  // ask (Windows); elsewhere every option is offered and the probe decides.
   videoGridLayout->addWidget(new QLabel(tr("Encoder:"), this), 1, 0, 1, 1);
   encoderCombobox = new QComboBox(videoGroupbox);
-  encoderCombobox->addItem(tr("Software (CPU)"), 0);
-  encoderCombobox->addItem(tr("NVIDIA NVENC (GPU)"), 1);
-  encoderCombobox->setToolTip(tr("NVENC encodes H.264/H.265 on an NVIDIA GPU, which is much faster\n"
-                                 "than software encoding. If no compatible GPU/driver is found the\n"
-                                 "export falls back to the software encoder automatically."));
+  encoderCombobox->addItem(tr("Software (CPU)"), int(kHardwareEncoderNone));
+
+  bool have_nvidia = true;
+  bool have_amd = true;
+  bool have_intel = true;
+#ifdef Q_OS_WIN
+  {
+    const QVector<olive::gpu::Device> gpus = olive::gpu::EnumerateDevices();
+    if (!gpus.isEmpty()) {
+      have_nvidia = have_amd = have_intel = false;
+      for (int i=0;i<gpus.size();i++) {
+        switch (gpus.at(i).vendor_id) {
+        case 0x10DE:
+          have_nvidia = true;
+          break;
+        case 0x1002:
+          have_amd = true;
+          break;
+        case 0x8086:
+          have_intel = true;
+          break;
+        }
+      }
+    }
+  }
+#endif
+
+  if (have_nvidia) {
+    encoderCombobox->addItem(tr("NVIDIA NVENC (GPU)"), int(kHardwareEncoderNvenc));
+  }
+  if (have_amd) {
+    encoderCombobox->addItem(tr("AMD AMF (GPU)"), int(kHardwareEncoderAmf));
+  }
+  if (have_intel) {
+    encoderCombobox->addItem(tr("Intel QuickSync (GPU)"), int(kHardwareEncoderQsv));
+  }
+
+  encoderCombobox->setToolTip(tr("Encode H.264/H.265 on the graphics card instead of the CPU, which is much\n"
+                                 "faster: NVENC on NVIDIA, AMF on AMD and QuickSync on Intel. Only the\n"
+                                 "vendors present in this machine are listed. If no compatible GPU/driver\n"
+                                 "is found the export falls back to the software encoder automatically."));
   videoGridLayout->addWidget(encoderCombobox, 1, 1, 1, 1);
 
   videoGridLayout->addWidget(new QLabel(tr("Width:"), this), 2, 0, 1, 1);

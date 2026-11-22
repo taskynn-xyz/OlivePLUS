@@ -207,7 +207,7 @@ private:
   QComboBox* vcodecCombobox;
 
   /**
-   * @brief ComboBox for the encoder used for that codec (software or NVIDIA NVENC)
+   * @brief ComboBox for the encoder used for that codec (software, NVIDIA NVENC, AMD AMF or Intel QuickSync)
    */
   QComboBox* encoderCombobox;
 
