@@ -7,10 +7,12 @@
 
   
   OlivePLUS is a community fork of [Olive 0.1.2](https://github.com/olive-editor/olive), the open-source non-linear video editor.
-Current version: **OlivePLUS 1.0.1 | Alpha**.
+Current version: **OlivePLUS 1.0.2 | Alpha**.
 
 ## What's different from Olive 0.1.2
 
+- GPU acceleration level (Light / Balanced / Aggressive) that also caps preview resolution, a preview thread count, and a GPU picker for multi-adapter machines
+- Hardware H.264/H.265 encoding on export for NVIDIA (NVENC), AMD (AMF) and Intel (QuickSync)
 - 3D parenting for adjacent tracks, including 3D nulls that pivot their children around the null's own centre
 - Camera effect works as a 3D object and can be parented / driven by a 3D null
 - Text effects moved to the Stylize category

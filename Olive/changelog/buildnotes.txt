@@ -1,4 +1,4 @@
-OlivePLUS 1.0.1 - custom Windows x64 build
+OlivePLUS 1.0.2 - custom Windows x64 build
 ==========================================
 
 Local source modifications in this build
@@ -554,3 +554,31 @@ settings and cache inside this folder instead of %APPDATA%.
                      blur), Bokeh (flat disc of taps).
     - Bloom also declares #version 110 explicitly now.
     - Files: effects/community/{deepglow,neonGlow,innerGlow,bloom}/*.xml and *.frag.
+
+31. GPU options: acceleration level, preview threads, GPU selection, AMD/Intel encoders (November 2026)
+    - Preferences > General gained three GPU controls.
+      * GPU Acceleration: Light (no multisampling, vsync on, previews never above half resolution),
+        Balanced (4x multisampling at the Playback Quality chosen in the Playback menu) and Aggressive
+        (8x multisampling, vsync off). The surface format has to exist before QApplication, so the level
+        is read early in main() and handed to QSurfaceFormat::setDefaultFormat. Preview resolution is
+        what actually moves GPU load, which is why the Light level caps it.
+      * Preview Threads: how many CPU threads each decoder may use while caching preview frames
+        (0 = automatic). Compositing stays on the single GPU render thread.
+      * GPU: on machines with more than one adapter, which one Olive runs on. Adapters come from DXGI
+        (duplicates and the Microsoft Basic Render Driver filtered out, APUs detected by their small
+        dedicated heap). Windows cannot bind an OpenGL context to an adapter, so the pick is applied by
+        writing the per-application value the Display settings use (HKCU\Software\Microsoft\DirectX\
+        UserGpuPreferences, GpuPreference=2 for a discrete card, 1 for an integrated one) and by
+        setting the NVIDIA Optimus / AMD PowerXpress request globals. Selecting Automatic removes the
+        value again.
+    - Export dialog Encoder row: the NVENC-only switch became a vendor enum, so AMD AMF
+      (h264_amf/hevc_amf) and Intel QuickSync (h264_qsv/hevc_qsv) sit next to NVIDIA NVENC. Only
+      vendors that have an adapter in the machine are listed, each encoder keeps the throwaway-context
+      probe and software fallback, takes the encoder's own pixel format when the software one is not
+      supported (QuickSync only takes nv12), and gets its own rate control: AMF cqp (qp_i/qp_p) or cbr,
+      QuickSync ICQ through global_quality or cbr.
+    - Files: global/config.cpp/.h (GPUAcceleration, RenderThreads, GPUDevice, playback_divider()),
+      global/gpu.cpp/.h (new: DXGI enumeration and per-application GPU preference),
+      main.cpp (early config read, surface format, ApplyPreference), dialogs/preferencesdialog.cpp/.h,
+      rendering/cacher.cpp (decoder thread count), rendering/exportthread.cpp/.h (HardwareEncoder),
+      dialogs/exportdialog.cpp/.h (Encoder row), ui/viewerwidget.cpp (preview divider), CMakeLists.

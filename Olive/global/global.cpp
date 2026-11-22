@@ -65,8 +65,8 @@ OliveGlobal::OliveGlobal() :
   version_id = QString(" | %1").arg(GITHASH);
 #endif
 
-  // OlivePLUS carries its own version line: the fork is at 1.0.1 while it is still in alpha.
-  olive::AppName = QString("OlivePLUS 1.0.1 | Alpha");
+  // OlivePLUS carries its own version line: the fork is at 1.0.2 while it is still in alpha.
+  olive::AppName = QString("OlivePLUS 1.0.2 | Alpha");
 
   // set the file filter used in all file dialogs pertaining to Olive project files.
   project_file_filter = tr("Olive Project %1").arg("(*.ove)");

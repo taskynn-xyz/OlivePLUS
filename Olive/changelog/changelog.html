@@ -11,13 +11,27 @@ code { font-family: Consolas, monospace; }
 </head>
 <body>
 
-<h1>OlivePLUS 1.0.1</h1>
+<h1>OlivePLUS 1.0.2</h1>
 <p style="color:#666; margin-top:0;">Changes compared to vanilla Olive 0.1.2</p>
 
 <p>OlivePLUS is a fork of <b>Olive 0.1.2</b>, the last release of the original Olive non-linear
-video editor. Everything listed below is new or changed in OlivePLUS 1.0.1; the upstream 0.1.2
+video editor. Everything listed below is new or changed in OlivePLUS 1.0.2; the upstream 0.1.2
 feature set (timeline, project/media handling, transitions, the original effects, export to
 FFmpeg formats) is still there underneath.</p>
+
+<h2>New in 1.0.2</h2>
+<ul>
+  <li><b>GPU Acceleration level</b> (<i>Preferences &gt; General</i>): Light, Balanced or Aggressive.
+      Besides multisampling and vsync, the level now controls the resolution the Viewer previews at,
+      which is what actually decides how hard the GPU works.</li>
+  <li><b>Preview Threads</b> (<i>Preferences &gt; General</i>): how many CPU threads each decoder may
+      use while caching previews, or Automatic for all cores.</li>
+  <li><b>GPU picker</b> (<i>Preferences &gt; General</i>): on a machine with more than one graphics
+      adapter, choose which one Olive runs on. Takes effect on the next launch.</li>
+  <li><b>Hardware encoding for AMD and Intel</b>: the Export dialog's Encoder row now offers
+      <b>AMD AMF</b> and <b>Intel QuickSync</b> next to <b>NVIDIA NVENC</b>, each falling back to the
+      software encoder when no compatible GPU or driver is present.</li>
+</ul>
 
 <h2>New in 1.0.1</h2>
 <ul>
