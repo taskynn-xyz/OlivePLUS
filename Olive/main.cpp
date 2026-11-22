@@ -27,6 +27,7 @@
 #include "global/debug.h"
 #include "global/config.h"
 #include "global/global.h"
+#include "global/gpu.h"
 #include "panels/timeline.h"
 #include "ui/mediaiconservice.h"
 #include "ui/mainwindow.h"
@@ -126,8 +127,9 @@ int main(int argc, char *argv[]) {
   // Read the configuration now: the GPU acceleration level decides the multisample count and the vsync behaviour
   // of every OpenGL surface, and the default format has to be in place before QApplication is constructed.
   // MainWindow loads the rest of the configuration (this file included) once it exists.
+  const QString exe_path = QFileInfo(QString::fromLocal8Bit(argv[0])).absoluteFilePath();
   {
-    QDir exe_dir(QFileInfo(QString::fromLocal8Bit(argv[0])).absolutePath());
+    QDir exe_dir(QFileInfo(exe_path).absolutePath());
     QString config_path = QFileInfo::exists(exe_dir.filePath("portable"))
         ? exe_dir.absolutePath()
         : QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
@@ -135,6 +137,10 @@ int main(int argc, char *argv[]) {
       olive::CurrentConfig.load(QDir(config_path).filePath("config.xml"));
     }
   }
+
+  // Ask the driver for the GPU the user chose before any OpenGL context exists. On machines with a single adapter
+  // this is a no-op.
+  olive::gpu::ApplyPreference(olive::CurrentConfig.gpu_device, exe_path);
 
   QSurfaceFormat format;
   format.setDepthBufferSize(24);

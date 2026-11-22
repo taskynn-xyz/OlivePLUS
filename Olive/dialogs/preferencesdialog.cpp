@@ -46,6 +46,7 @@
 
 #include "global/global.h"
 #include "global/config.h"
+#include "global/gpu.h"
 #include "global/path.h"
 #include "rendering/audio.h"
 #include "panels/panels.h"
@@ -216,6 +217,8 @@ void PreferencesDialog::accept() {
   // Check if any settings will require a restart of Olive
   if (bool_requires_restart
       || olive::CurrentConfig.gpu_acceleration != gpu_acceleration_combobox->currentIndex()
+      || (gpu_device_combobox != nullptr
+          && olive::CurrentConfig.gpu_device != gpu_device_combobox->currentData().toString())
       || olive::CurrentConfig.thumbnail_resolution != thumbnail_res_spinbox->value()
       || olive::CurrentConfig.waveform_resolution != waveform_res_spinbox->value()
       || olive::CurrentConfig.css_path != custom_css_fn->text()
@@ -274,6 +277,9 @@ void PreferencesDialog::accept() {
   olive::CurrentConfig.effect_textbox_lines = effect_textbox_lines_field->value();
   olive::CurrentConfig.gpu_acceleration = gpu_acceleration_combobox->currentIndex();
   olive::CurrentConfig.render_threads = render_threads_spinbox->value();
+  if (gpu_device_combobox != nullptr) {
+    olive::CurrentConfig.gpu_device = gpu_device_combobox->currentData().toString();
+  }
   olive::CurrentConfig.language_file = language_combobox->currentData().toString();
 
   olive::CurrentConfig.default_sequence_width = default_sequence.width;
@@ -614,6 +620,34 @@ void PreferencesDialog::setup_ui() {
   general_layout->addWidget(render_threads_spinbox, row, 1, 1, 4);
 
   row++;
+
+  // General -> GPU selection, only shown when there is actually more than one adapter to choose between
+  QVector<olive::gpu::Device> gpu_devices = olive::gpu::EnumerateDevices();
+  if (gpu_devices.size() > 1) {
+    general_layout->addWidget(new QLabel(tr("GPU:")), row, 0);
+
+    gpu_device_combobox = new QComboBox();
+    gpu_device_combobox->addItem(tr("Automatic (let the driver decide)"), QString());
+    for (int i=0;i<gpu_devices.size();i++) {
+      const olive::gpu::Device& device = gpu_devices.at(i);
+      QString label = device.name;
+      if (device.integrated) {
+        label += tr(" (integrated)");
+      }
+      if (device.memory > 0) {
+        label += tr(" - %1 MB").arg(device.memory / (1024 * 1024));
+      }
+      gpu_device_combobox->addItem(label, device.name);
+    }
+    gpu_device_combobox->setCurrentIndex(qMax(0, gpu_device_combobox->findData(olive::CurrentConfig.gpu_device)));
+    gpu_device_combobox->setToolTip(tr("Which graphics adapter Olive asks for. The request is handed to Windows and "
+                                       "to the graphics driver, which can still override it; games and other "
+                                       "applications running at the same time are not affected. Takes effect "
+                                       "after a restart."));
+    general_layout->addWidget(gpu_device_combobox, row, 1, 1, 4);
+
+    row++;
+  }
 
   // General -> Default Sequence Settings
   QPushButton* default_sequence_settings = new QPushButton(tr("Default Sequence Settings"));

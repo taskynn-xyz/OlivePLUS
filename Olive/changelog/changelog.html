@@ -59,6 +59,11 @@ FFmpeg formats) is still there underneath.</p>
   <li><b>Preview Threads</b> (<i>Preferences &gt; General</i>): how many CPU threads each decoder may use
       while preparing previews, or Automatic to let it use every core. Compositing the preview runs on a
       single GPU render thread, so this controls the decoding half of playback load only.</li>
+  <li><b>GPU selection</b> (<i>Preferences &gt; General</i>): on a machine with more than one graphics
+      adapter, choose which one Olive renders on, or leave it on Automatic. Olive lists the adapters the
+      system reports, marks the integrated ones, and asks Windows and the driver for the chosen adapter (the
+      same per-application preference the Display settings write), with the NVIDIA Optimus and AMD
+      PowerXpress request as a fallback for older drivers. Applied when Olive starts.</li>
 </ul>
 
 <h2>3D, motion graphics and parenting</h2>

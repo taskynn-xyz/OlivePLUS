@@ -216,6 +216,8 @@ set(OLIVE_SOURCES
   global/debug.h
   global/global.cpp
   global/global.h
+  global/gpu.cpp
+  global/gpu.h
   global/math.cpp
   global/math.h
   global/path.cpp
@@ -507,6 +509,11 @@ target_link_libraries(${OLIVE_TARGET}
   FFMPEG::swscale
   FFMPEG::swresample
 )
+
+if(WIN32)
+  # DXGI is used to list the machine's GPUs for the GPU preference
+  target_link_libraries(${OLIVE_TARGET} PRIVATE dxgi)
+endif()
 
 if(WIN32 AND OPENCOLORIO_FOUND)
   target_link_libraries(${OLIVE_TARGET} PRIVATE OpenColorIO)

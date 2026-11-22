@@ -223,6 +223,9 @@ void Config::load(QString path) {
         } else if (stream.name() == "RenderThreads") {
           stream.readNext();
           render_threads = qBound(0, stream.text().toInt(), 64);
+        } else if (stream.name() == "GPUDevice") {
+          stream.readNext();
+          gpu_device = stream.text().toString();
         } else if (stream.name() == "CenterTimelineTimecodes") {
           stream.readNext();
           center_timeline_timecodes =  (stream.text() == "1");
@@ -331,6 +334,7 @@ void Config::save(QString path) {
   stream.writeTextElement("UseSoftwareFallback", QString::number(use_software_fallback));
   stream.writeTextElement("GPUAcceleration", QString::number(gpu_acceleration));
   stream.writeTextElement("RenderThreads", QString::number(render_threads));
+  stream.writeTextElement("GPUDevice", gpu_device);
   stream.writeTextElement("CenterTimelineTimecodes", QString::number(center_timeline_timecodes));
   stream.writeTextElement("PreferredAudioOutput", preferred_audio_output);
   stream.writeTextElement("PreferredAudioInput", preferred_audio_input);

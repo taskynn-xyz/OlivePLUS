@@ -503,6 +503,16 @@ struct Config {
   int render_threads;
 
   /**
+   * @brief GPU to render on
+   *
+   * Device::name of the adapter the user picked in the Preferences, or **EMPTY** to let the driver choose.
+   *
+   * Applied at start-up (see olive::gpu::ApplyPreference()), because the adapter has to be requested before the
+   * first OpenGL context is created, so changing it takes effect on the next start.
+   */
+  QString gpu_device;
+
+  /**
    * @brief Center Timeline timecodes
    *
    * By default, Olive shows timecodes in the TimelineHeader centered to the corresponding frame point. This may not

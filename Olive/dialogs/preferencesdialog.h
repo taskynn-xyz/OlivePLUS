@@ -254,6 +254,13 @@ private:
   QSpinBox* render_threads_spinbox;
 
   /**
+   * @brief UI widget for selecting which GPU to render on
+   *
+   * **NULL** when the machine only reports a single adapter, in which case there is nothing to choose.
+   */
+  QComboBox* gpu_device_combobox = nullptr;
+
+  /**
    * @brief UI widget for selecting the current UI style
    */
   QComboBox* ui_style;

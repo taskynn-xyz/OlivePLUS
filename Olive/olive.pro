@@ -63,6 +63,7 @@ SOURCES += \
     timeline/sequence.cpp \
     timeline/clip.cpp \
     global/config.cpp \
+    global/gpu.cpp \
     dialogs/newsequencedialog.cpp \
     ui/viewerwidget.cpp \
     ui/viewercontainer.cpp \
@@ -189,6 +190,7 @@ HEADERS += \
     timeline/sequence.h \
     timeline/clip.h \
     global/config.h \
+    global/gpu.h \
     dialogs/newsequencedialog.h \
     ui/viewerwidget.h \
     ui/viewercontainer.h \
@@ -327,7 +329,7 @@ win32 {
     }
 
     RC_FILE = packaging/windows/resources.rc
-    LIBS += -lavutil -lavformat -lavcodec -lavfilter -lswscale -lswresample -lopengl32 -luser32
+    LIBS += -lavutil -lavformat -lavcodec -lavfilter -lswscale -lswresample -lopengl32 -luser32 -ldxgi
     contains(DEFINES, OLIVE_OCIO) {
         LIBS += -lOpenColorIO
     }
