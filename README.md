@@ -14,11 +14,10 @@ Current version: **OlivePLUS 1.0.2 | Alpha**.
 - GPU acceleration level (Light / Balanced / Aggressive) that also caps preview resolution, a preview thread count, and a GPU picker for multi-adapter machines
 - Hardware H.264/H.265 encoding on export for NVIDIA (NVENC), AMD (AMF) and Intel (QuickSync)
 - 3D parenting for adjacent tracks, including 3D nulls that pivot their children around the null's own centre
+- Layer parenting system
 - Camera effect works as a 3D object and can be parented / driven by a 3D null
-- Text effects moved to the Stylize category
-- Per-effect glow method pickers in Deep Glow, Neon Glow, Inner Glow and Bloom
-- Colour picker swatch fixes, Gradient Ramp removed
-- New Help → Changelog and a bundled BUILD-NOTES tab
+- Lots of effects
+- Refreshed UI
 
 See `Olive/changelog/changelog.html` for the full list.
 
